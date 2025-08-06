@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36212.18
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stellar.Common", "Stellar.Common\Stellar.Common.csproj", "{CF84CCD6-180E-4518-91A3-1F1A74CC3F58}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stellar.Common.Tests", "Stellar.Common.Tests\Stellar.Common.Tests.csproj", "{97F344B2-185D-4A9F-9950-F6C3113FAD1C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF84CCD6-180E-4518-91A3-1F1A74CC3F58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF84CCD6-180E-4518-91A3-1F1A74CC3F58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF84CCD6-180E-4518-91A3-1F1A74CC3F58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF84CCD6-180E-4518-91A3-1F1A74CC3F58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97F344B2-185D-4A9F-9950-F6C3113FAD1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97F344B2-185D-4A9F-9950-F6C3113FAD1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97F344B2-185D-4A9F-9950-F6C3113FAD1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97F344B2-185D-4A9F-9950-F6C3113FAD1C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB02B4C8-FE3C-4DF2-AA94-544EAF20E869}
+	EndGlobalSection
+EndGlobal
