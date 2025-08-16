@@ -44,10 +44,10 @@ public static partial class FileNameParser
             {
                 "base" when undefined => fileInfo.BaseFileName,
                 "filename" when undefined => fileInfo.FileName,
-                "created" => fileInfo.CreationTime,
-                "createdutc" => fileInfo.CreationTimeUtc,
-                "modified" => fileInfo.LastWriteTime,
-                "modifiedutc" => fileInfo.LastWriteTimeUtc,
+                "created" => fileInfo.Created,
+                "createdutc" => fileInfo.CreatedUtc,
+                "modified" => fileInfo.Modified,
+                "modifiedutc" => fileInfo.ModifiedUtc,
                 "timestamp" => fileInfo.Timestamp,
                 _ => groupValue
             });

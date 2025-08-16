@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RepositoryUrl>https://github.com/cloudkitects/Stellar.Common</RepositoryUrl>
-    <VersionPrefix>1.0.7</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Title>Stellar.Common</Title>
     <Authors>cloudkitects</Authors>

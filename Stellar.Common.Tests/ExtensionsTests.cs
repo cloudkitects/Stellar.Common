@@ -77,5 +77,108 @@ public class ExtensionsTests
 
         Assert.True(b <= r || r <= c);
     }
+
+    public class TestObject(int a, bool b, string c)
+    {
+        public int A { get; set; } = a;
+        public bool B { get; set; } = b;
+        public string C { get; set; } = c;
+
+        public double D = 3.14;
+
+        public double E() { return A * D; }
+    }
+
+    public static TheoryData<TestObject> TestObjects =
+    [
+        new TestObject(1, false, "no" ),
+        new TestObject(2, true, "yes" ),
+    ];
+
+    [Theory]
+    [MemberData(nameof(TestObjects))]
+    public void ConvertsToDynamicDictionary(TestObject o)
+    {
+        dynamic d = o.ToDynamicDictionary();
+
+        Assert.True(TypeCache.TryGet(typeof(TestObject), out _));
+
+        Assert.Equal(o.A, d.A);
+        Assert.Equal(o.B, d["b"]);
+        Assert.Equal(o.C, d["C"]);
+        Assert.Equal(o.D, d.d);
+
+        var e = new Dictionary<string, object>()
+        {
+            { "a", new DateOnly(2025, 08, 15) },
+            { "b", 2 },
+            { "c", "tomorrow" },
+        };
+
+        dynamic f = e.ToDynamicDictionary();
+
+        Assert.Equal(e["a"], f.A);
+    }
+
+    [Fact]
+    public void RecognizesAnonymousType()
+    {
+        var o = new { A = 1, B = "test" };
+        int? p = null;
+
+        Assert.True(o.IsAnonymousType());
+        Assert.False(p!.IsAnonymousType());
+    }
+
+
+    [Fact]
+    public void ExtendsString()
+    {
+        var j = @"Joe ""eat-at"" Joe";
+        var k = "Kay \"kay\" Bier";
+        var l = "Lia 'son' Swan";
+
+        var x = new { A = 1, B = "test" }.ToString();
+        var s = "    ";
+        var t = s.Trim();
+        var m = "-55";
+        var n = "44";
+        var o = ".14";
+        var p = "  -1.14";
+        var q = " -";
+
+        Assert.Equal("\"Joe \"\"eat-at\"\" Joe\"", j.Qualify());
+        Assert.Equal("\"Kay \\\"kay\\\" Bier\"", k.Qualify(e: '\\'));
+        Assert.Equal("'Lia ''son'' Swan'", l.Qualify('\'', '\''));
+
+        Assert.Equal("0636148e-631c-a9df-14eb-ab2083e1916c", x!.Hash().ToString());
+
+        Assert.True(s.IsNullOrWhiteSpace());
+        Assert.True(t.IsNullOrEmpty());
+        Assert.Null(t.NullIfEmpty());
+        Assert.NotNull(j.NullIfEmpty());
+
+        Assert.True(m.IsNumericAt(0));
+        Assert.True(n.IsNumericAt(0));
+        Assert.True(o.IsNumericAt(0));
+        Assert.True(p.IsNumericAt(2));
+
+        Assert.False(s.IsNumericAt(-1));
+        Assert.False(s.IsNumericAt(5));
+        Assert.False(q.IsNumericAt(1));
+
+        Assert.True('a'.IsIdentifier());
+        Assert.True('Z'.IsIdentifier());
+        Assert.True('_'.IsIdentifier());
+    }
+
+    [Fact]
+    public void ExtendsDateTime()
+    {
+        var date = new DateTime(2023, 10, 15);
+
+        Assert.Equal(364, date.YearTotalDays());
+        Assert.Equal(2023287, date.ToJulianDate());
+    }
     #endregion
 }

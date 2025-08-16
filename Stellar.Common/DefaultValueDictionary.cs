@@ -97,7 +97,7 @@ public class DefaultValueDictionary<TKey, TValue> : IDictionary<TKey, TValue> wh
     }
     #endregion
 
-    #region IEnumerable Members
+    #region IEnumerable
     IEnumerator IEnumerable.GetEnumerator()
     {
         return dictionary.GetEnumerator();

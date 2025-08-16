@@ -55,30 +55,26 @@ public static class TypeCache
 
 
     /// <summary>Get a dictionary containing the objects property and field names and values.</summary>
-    public static IDictionary<string, object> ToDictionary(object instance)
+    public static IDictionary<string, object?> ToDictionary(object instance)
     {
         // support dynamic objects backed by a dictionary of string object
-        if (instance is IDictionary<string, object> asDictionary)
+        if (instance is IDictionary<string, object?> asDictionary)
         {
             return asDictionary;
         }
 
-        var type = instance.GetType();
+        var dictionary = new Dictionary<string, object?>();
 
-        var metadata = GetOrAdd(type);
-
-        var dictionary = new Dictionary<string, object>();
-
-        foreach (DictionaryEntry entry in metadata)
+        foreach (DictionaryEntry entry in GetOrAdd(instance.GetType()))
         {
             var value = entry.Value switch
             {
                 FieldInfo fieldInfo => fieldInfo.GetValue(instance),
                 PropertyInfo propertyInfo => propertyInfo.GetValue(instance, null),
-                _ => null
+                _ => throw new InvalidOperationException($"Unexpected reflection class found in {nameof(instance)}.") // unreachable
             };
 
-            dictionary.Add($"{entry.Key}", value!);
+            dictionary.Add($"{entry.Key}", value);
         }
 
         return dictionary;

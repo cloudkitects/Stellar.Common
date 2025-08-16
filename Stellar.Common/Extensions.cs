@@ -8,29 +8,8 @@ using System.Text.RegularExpressions;
 
 namespace Stellar.Common;
 
-/// <summary>
-/// .Net intrinsic object extensions.
-/// </summary>
 public static partial class Extensions
 {
-    #region Queue<string>
-    /// <summary>
-    /// Safe deque.
-    /// </summary>
-    /// <param name="queue">The queue to dequeue (pop).</param>
-    /// <param name="required">Throw behavior.</param>
-    /// <returns>the popped element or empty.</returns>
-    public static string Pop(this Queue<string> queue, bool required = false)
-    {
-        if (!queue.TryDequeue(out var head) || required && string.IsNullOrEmpty(head))
-        {
-            throw new ArgumentException("A required element is missing or empty.");
-        }
-
-        return head;
-    }
-    #endregion
-
     #region object
     public static bool IsAnonymousType(this object item)
     {
@@ -62,12 +41,38 @@ public static partial class Extensions
     {
         var hash = MD5.HashData(Encoding.Default.GetBytes(input));
 
-        return new Guid([.. hash.Take(16)]);
+        return new Guid([.. hash]);
     }
 
-    public static string? NullIfEmpty(this string? value)
+    public static string? NullIfEmpty(this string value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    public static bool IsNullOrWhiteSpace(this string value)
+    {
+        return string.IsNullOrWhiteSpace(value);
+    }
+    public static bool IsNullOrEmpty(this string value)
+    {
+        return string.IsNullOrEmpty(value);
+    }
+
+    public static bool IsNumericAt(this string expr, int pos)
+    {
+        var n = expr.Length - 1;
+
+        if (string.IsNullOrWhiteSpace(expr) || !pos.Between(0, n))
+        {
+            return false;
+        }
+
+        var c = expr[pos];
+
+        var p = pos - 1 >= 0 ? expr[pos - 1] : 'X';
+        var s = pos + 1 <= n ? expr[pos + 1] : 'X';
+
+        return !p.IsNumber() & (c == '-' || c == '.') & s.IsNumber() || c.IsNumber();
     }
     #endregion
 
@@ -123,6 +128,13 @@ public static partial class Extensions
         var e = new DateTime(y, 12, 31);
 
         return Convert.ToInt32((e - s).TotalDays);
+    }
+
+    public static int ToJulianDate(this DateTime datetime)
+    {
+        var start = new DateTime(datetime.Year, 1, 1);
+
+        return Convert.ToInt32($"{datetime.Year:D4}{Convert.ToInt32((datetime - start).TotalDays)}");
     }
     #endregion
 

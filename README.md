@@ -142,6 +142,60 @@ foreach (var entry in entries)
 
 The controller is optional, or can be leveraged for converting the DTO into a strongly-defined object if so desired. Using loosely-defined objects is a quick way to get things building. This is of course a double-edged sword, as it can still lead to runtime errors and information loss.
 
+User property names colliding with method names are handled gracefully (in a particle/wave duality manner):
+
+```cs
+[Theory]
+[InlineData("Add", "oh my")]
+[InlineData("Contains", false)]
+[InlineData("ContainsKey", "certainly")]
+[InlineData("TryGetValue", -1 /* beer */)]
+[InlineData("Remove", "2025-08-16")]
+[InlineData("Clear", "Crystal")]
+public void MethodCollisionTest(string key, object? value)
+{
+    var input = new Dictionary<string, object?>() { { key, value } };
+        
+    dynamic obj = new DynamicDictionary(input);
+
+    // colliding property names are available...
+    Assert.Equal(value, obj.Add ?? obj.Clear ?? obj.Contains ?? obj.ContainsKey ?? obj.TryGetValue ?? obj.Remove);
+
+    // ...methods are also available.
+    var kvp = new KeyValuePair<string, object?>("Well", "done");
+        
+    obj.Add(kvp.Key, kvp.Value);
+    Assert.True(obj.Contains(input.First()));
+    Assert.True(obj.Contains(kvp));
+    Assert.True(obj.ContainsKey(key));
+    Assert.True(obj.TryGetValue(key, out object? v) && v == value);
+    Assert.True(obj.Remove(input.First()));
+    Assert.Equal(1, obj.Count);
+}
+```
+
+User v. intrinsic property name collisions are handled less gracefully, but still work as expected:
+```cs
+[Theory]
+[InlineData("Keys", "one,two")]
+[InlineData("IsReadonly", true)]
+[InlineData("Count", 30)]
+public void PropertyCollisionTest(string key, object? value)
+{
+    dynamic obj = new DynamicDictionary(new Dictionary<string, object?>() { { key, value } });
+
+    // intrinsic properties are not overriden
+    Assert.NotEqual(value, obj.Keys);
+    Assert.False(obj.IsReadOnly);
+    Assert.Equal(1, obj.Keys.Count);
+    Assert.Equal(1, obj.Count);
+
+    // colliding user properties are available
+    Assert.Equal(value, obj[key]);
+    Assert.Equal(value, obj.Values[0]); 
+}
+```cs
+
 # EnumHelper
 
 An in-depth mapper of declared string or underlying values to enum members, with helpers checking if a value is defined, getting member names, etc. It aims at reducing the impedance between ETL-as-Code (JSON, YAML) and CSharp.

@@ -15,13 +15,7 @@ public class FileNameParserTests
         { "(?<timestamp>.+).txt", "20241231.txt", "{timestamp:yyyy-MM-dd}.txt", "2024-12-31.txt" },
         { ".+statement(?<timestamp>.+).pdf$", "bank_statement202507251843.pdf", "bank_statement{timestamp:yyyy-MM-dd}.csv", "bank_statement2025-07-25.csv" },
         { "Base(?<base>[^0-9]+)(?<timestamp>.+).xlsx", "Baseball20241231.xlsx", "Basket{base}-{timestamp:yyyy-MM}.csv", "Basketball-2024-12.csv" },
-        { "(?<base>[^0-9]+)ball(?<timestamp>.+).xlsx", "Baseball2025-07-26.xlsx", "{base}ketball-{timestamp:yyyyMMdd}.csv", "Baseketball-20250726.csv" },
-    };
-
-    public static TheoryData<string, string, string, string, long> ExistingFiles => new()
-    {
-        { @"(?<base>.+)(?<number>\d\d).csv", "file01.csv", "{base}-{number}.tsv", "file-01.tsv", 442L },
-        { @"persons.csv", "persons.csv", "{base}-{timestamp:yyyy-MM-dd}.tsv", $"persons-{DateOnly.FromDateTime(DateTime.Now):yyyy-MM-dd}.tsv", 100162L },
+        { "(?<base>[^0-9]+)ball(?<timestamp>.+).xlsx", "Baseball2025-07-26.xlsx", "{base}ketball-{timestamp:yyyyMMdd}.csv", "Baseketball-20250726.csv" }
     };
 
     [Theory]
@@ -43,6 +37,12 @@ public class FileNameParserTests
         Assert.True(output.IsReadOnly);
         Assert.Equal(0, output.Length);
     }
+
+    public static TheoryData<string, string, string, string, long> ExistingFiles => new()
+    {
+        { @"(?<base>.+)(?<number>\d\d).csv", "file01.csv", "{base}-{number}.tsv", "file-01.tsv", 442L },
+        { @"persons.csv", "persons.csv", "{base}-{timestamp:yyyy-MM-dd}.tsv", $"persons-{DateOnly.FromDateTime(DateTime.Now):yyyy-MM-dd}.tsv", 100162L },
+    };
 
     [Theory]
     [MemberData(nameof(ExistingFiles))]
@@ -109,5 +109,64 @@ public class FileNameParserTests
         var values = line?.Split('\t');
 
         Assert.Equal(expected, values![2]);
+    }
+
+    public static TheoryData<string, string> NoMatchFiles => new()
+    {
+        { @"file(?<number>\d\d).csv", "bogus.csv" },
+    };
+
+    [Theory]
+    [MemberData(nameof(NoMatchFiles))]
+    public void ParsesNomatchFiles(
+        string pattern,
+        string filename)
+    {
+        var result = FileNameParser.TryParse(filename, pattern, "template", out var output);
+        
+        Assert.False(result);
+    }
+
+    [Theory]
+    [InlineData("bogus.txt", "(?<base>bogus).txt", "{base} {created:yyyy-MM-dd} {modified:HH:mm}.csv")]
+    public void ParsesFileInfoProperties(string name, string pattern, string template) {
+        
+        File.CreateText(name).WriteLine("Hello, World.");
+
+        var info = new FileInfo(name);
+        var created = info.CreationTime;
+        var modified = info.LastWriteTime;
+        var expectedBaseFileName = $"{Path.GetFileNameWithoutExtension(name)} {created:yyyy-MM-dd} {modified:HH:mm}";
+
+        var result = FileNameParser.TryParse(info.FullName, pattern, template, out var output);
+
+        Assert.True(result);
+        Assert.NotNull(output);
+
+        Assert.Equal(expectedBaseFileName + output.Extension, output.FileName);
+        Assert.Equal(expectedBaseFileName, output.BaseFileName);
+        Assert.Equal(info.DirectoryName, output.Path);
+    }
+
+    [Theory]
+    [InlineData("lorem.txt", "(?<base>lorem).txt", "{filename} {createdutc:yyyy-MM-dd} {modifiedutc:HH:mm}.csv")]
+    public void ParsesFileInfoUtcProperties(string name, string pattern, string template) {
+        
+        File.CreateText(name).WriteLine("Hello, World.");
+
+        var info = new FileInfo(name);
+
+        var createdUtc = info.CreationTimeUtc;
+        var modifiedUtc = info.LastWriteTimeUtc;
+        
+        var expectedBaseFileName = $"{name} {createdUtc:yyyy-MM-dd} {modifiedUtc:HH:mm}";
+
+        var result = FileNameParser.TryParse(info.FullName, pattern, template, out var output);
+
+        Assert.True(result);
+        Assert.NotNull(output);
+        Assert.Equal(expectedBaseFileName + output.Extension, output.FileName);
+        Assert.Equal(expectedBaseFileName, output.BaseFileName);
+        Assert.Equal(info.DirectoryName, output.Path);
     }
 }
