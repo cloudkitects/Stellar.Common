@@ -1,4 +1,7 @@
-﻿namespace Stellar.Common.Tests;
+﻿using Microsoft.CSharp.RuntimeBinder;
+using System.Linq;
+
+namespace Stellar.Common.Tests;
 
 public class DynamicDictionaryTests
 {
@@ -119,6 +122,24 @@ public class DynamicDictionaryTests
         Assert.Equal("Left", $"{enumerator2.Current.Value}");
     }
 
+    [Fact]
+    public void DefaultValueDictionaryTest()
+    {
+        var input = new Dictionary<string, object?>() {
+            { "First", "Clark" },
+            { "Last", "Kent" },
+            { "Parts", "Left" },
+            { "Alter", "Superman" }
+        };
+
+        var dict = new DefaultValueDictionary<string, object?>(input);
+
+        foreach (var kvp in dict)
+        {
+            Assert.Equal(input[kvp.Key], kvp.Value);
+        }
+    }
+
     [Theory]
     [InlineData("Keys", "one,two")]
     [InlineData("IsReadonly", true)]
@@ -164,6 +185,24 @@ public class DynamicDictionaryTests
         Assert.True(obj.TryGetValue(key, out object? v) && v == value);
         Assert.True(obj.Remove(input.First()));
         Assert.Equal(1, obj.Count);
+
+        obj.Remove(key);
+        Assert.Equal(1, obj.Count);
+
+        obj.Clear();
+        Assert.Equal(0, obj.Count);
+
+        obj.Focus = new Func<string>(() => "pocus");
+
+        Assert.Equal("pocus", obj.Focus());
+        try
+        {
+            obj.Locus();
+        }
+        catch (RuntimeBinderException)
+        {
+            Assert.True(true);
+        }
     }
 
     [Fact]

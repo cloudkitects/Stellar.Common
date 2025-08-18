@@ -174,7 +174,8 @@ public void MethodCollisionTest(string key, object? value)
 }
 ```
 
-User v. intrinsic property name collisions are handled less gracefully, but still work as expected:
+Property name collisions are handled less gracefully; intrinsic properties are preserved using dot access and user properties are only available through indexers:
+
 ```cs
 [Theory]
 [InlineData("Keys", "one,two")]

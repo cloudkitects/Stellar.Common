@@ -1,4 +1,7 @@
-﻿namespace Stellar.Common.Tests;
+﻿using System.Dynamic;
+using System.Globalization;
+
+namespace Stellar.Common.Tests;
 
 public class ExtensionsTests
 {
@@ -179,6 +182,58 @@ public class ExtensionsTests
 
         Assert.Equal(364, date.YearTotalDays());
         Assert.Equal(2023287, date.ToJulianDate());
+    }
+    #endregion
+
+    #region globalization
+    [Fact]
+    public void ExtendsCultureInfo()
+    {
+        var culture = "ISO-8859-1".CreateCultureInfo();
+
+        Assert.Equal("Invariant Language (Invariant Country)", culture.DisplayName);
+        Assert.Equal("Invariant Language (Invariant Country)", culture.NativeName);
+        Assert.Equal("MM/dd/yyyy", culture.DateTimeFormat.ShortDatePattern);
+        Assert.Equal("HH:mm:ss", culture.DateTimeFormat.LongTimePattern);
+        
+        culture = "bogus".CreateCultureInfo();
+
+        Assert.Equal(CultureInfo.CurrentCulture, culture);
+    }
+    #endregion
+
+    #region miscellaneous
+    [Fact]
+    public void MiscellaneousTests()
+    {
+        var obj1 = new Dictionary<string, object?>() { { "Created", DateOnly.FromDateTime(DateTime.Now) } };
+        var obj2 = new { X = 1, Y = "test" };
+        var obj3 = new ExpandoObject();
+        var obj4 = new DynamicDictionary(obj1);
+
+        var type1 = obj1.GetType();
+        var type2 = obj2.GetType();
+        var type3 = obj3.GetType();
+        var type4 = obj4.GetType();
+        var type5 = type4.BaseType!.BaseType!; // DynamicDictionary : DynamicInstance : DynamicObject
+
+        Assert.False(type1.IsDynamic());
+        Assert.False(type2.IsDynamic());
+        
+        Assert.True(type3.IsDynamic());
+        Assert.True(type4.IsDynamic());
+        Assert.True(type5.IsDynamic());
+
+        Assert.Null(type1.GetDefaultValue());
+        Assert.Null(type2.GetDefaultValue());
+        Assert.Null(type3.GetDefaultValue());
+        Assert.Null(type4.GetDefaultValue());
+        Assert.Null(type5.GetDefaultValue());
+
+        var a = new Action(() => { });
+
+        Assert.False(a.False());
+        Assert.True(a.True());
     }
     #endregion
 }

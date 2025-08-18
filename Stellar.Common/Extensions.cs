@@ -139,7 +139,7 @@ public static partial class Extensions
     #endregion
 
     #region culture info
-    public static CultureInfo CreateCultureInfo(string name)
+    public static CultureInfo CreateCultureInfo(this string name)
     {
         CultureInfo cultureInfo;
 
@@ -179,8 +179,8 @@ public static partial class Extensions
     #endregion
 
     #region helpers
-    public static bool False(Action action) { action(); return false; }
+    public static bool False(this Action action) { action(); return false; }
 
-    public static bool True(Action action) { action(); return true; }
+    public static bool True(this Action action) { action(); return true; }
     #endregion
 }

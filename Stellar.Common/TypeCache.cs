@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Specialized;
 using System.Reflection;
+using YamlDotNet.Core.Tokens;
 
 namespace Stellar.Common;
 
@@ -67,14 +68,14 @@ public static class TypeCache
 
         foreach (DictionaryEntry entry in GetOrAdd(instance.GetType()))
         {
-            var value = entry.Value switch
+            if (entry.Value is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo => fieldInfo.GetValue(instance),
-                PropertyInfo propertyInfo => propertyInfo.GetValue(instance, null),
-                _ => throw new InvalidOperationException($"Unexpected reflection class found in {nameof(instance)}.") // unreachable
-            };
-
-            dictionary.Add($"{entry.Key}", value);
+                dictionary.Add($"{entry.Key}", fieldInfo.GetValue(instance));
+            }
+            else if (entry.Value is PropertyInfo propertyInfo)
+            {
+                dictionary.Add($"{entry.Key}", propertyInfo.GetValue(instance));
+            }
         }
 
         return dictionary;
