@@ -106,6 +106,18 @@ public static partial class Extensions
 
         return result;
     }
+
+    public static void AddOrUpdate(this IDictionary<string, object?> dictionary, string key, object? value)
+    {
+        try
+        {
+            dictionary.Add(key, value);
+        }
+        catch
+        {
+            dictionary[key] = value;
+        }
+    }
     #endregion
 
     #region collection

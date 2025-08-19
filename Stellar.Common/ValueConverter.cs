@@ -134,12 +134,13 @@ public static class ValueConverter
             int i => i.ToString(format, culture),
             long l => l.ToString(format, culture),
             short s => s.ToString(format, culture),
-            
+
             byte b => b.ToString(format, culture),
             sbyte sb => sb.ToString(format, culture),
             uint ui => ui.ToString(format, culture),
             ulong ul => ul.ToString(format, culture),
             ushort us => us.ToString(format, culture),
+            
             bool boolean => boolean.ToString(culture),
 
             char c => c.ToString(culture),
@@ -158,9 +159,8 @@ public static class ValueConverter
     #region generic
     public static T Parse<T>(
         string input,
-        T defaultValue = default!,
         IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both) => (T)Parse(input, typeof(T), defaultValue, culture, trimmingOptions);
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both) => (T)Parse(input, typeof(T), null, culture, trimmingOptions);
 
     public static bool TryParse<T>(
         string input,
@@ -185,7 +185,7 @@ public static class ValueConverter
     public static object? Parse(
         object? value,
         Type type,
-        object? defaultValue = default!,
+        object? defaultValue = null,
         IFormatProvider? culture = null,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
@@ -201,7 +201,7 @@ public static class ValueConverter
     public static object Parse(
         string input,
         Type type,
-        object? defaultValue = default,
+        object? defaultValue = null,
         IFormatProvider? culture = null,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
@@ -212,7 +212,7 @@ public static class ValueConverter
         string input,
         Type type,
         out object? value,
-        object? defaultValue = default,
+        object? defaultValue = null,
         IFormatProvider? culture = null,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
@@ -809,7 +809,8 @@ public static class ValueConverter
         }
 
         value = defaultValue ?? DateOnly.MinValue;
-        return defaultValue is not null;
+        
+        return false;
     }
 
     public static DateOnly? ParseNullableDate(
@@ -881,7 +882,8 @@ public static class ValueConverter
         }
 
         value = defaultValue ?? DateTime.MinValue;
-        return defaultValue is not null;
+        
+        return false;
     }
 
     public static DateTime? ParseNullableDateTime(

@@ -232,11 +232,14 @@ public class ValueConverterTests
 
         { new DateTime(2025, 7, 18), "07/18/2025 00:00:00", null, null },
         { new DateTime(2025, 7, 18, 20, 45, 32), "2025-Jul-18 20:45:32", "yyyy-MMM-dd HH:mm:ss", null },
-
+        
+        { DateTimeOffset.FromUnixTimeSeconds(7), "00:00:07", "HH:mm:ss", null },
+        
         { new DateOnly(2025, 7, 18), "07/18/2025", null, null },
         { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd", null },
-
-        { new TimeOnly(20, 45, 32), "08.45.32", "hh.mm.ss", null },
+        
+        { new TimeOnly(20, 45, 32), "20:45", null, null },
+        
         { new TimeSpan(8, 45, 32), "08:45:32", null, CultureInfo.GetCultureInfo("fi-FI") },
         { new TimeSpan(8, 45, 32), "08:45:32", null, null },
 
@@ -244,7 +247,54 @@ public class ValueConverterTests
         { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
         { 'A', "A", null, null },
         { ' ', " ", null, null },
-        { '\u2192', "\u2192", null, null }
+        { '\u2192', "\u2192", null, null },
+        { 1.5E-5d, "1.5E-05", null, null },
+        { 1.5E-5d, "0.0000150000", "N10", null },
+        { 1.54321E-3f, "1.54321E-003", "E5", null },
+        { 1987.6m, "$1,987.60", "C2", CultureInfo.GetCultureInfo("en-US") },
+
+        { 123456, "123,456", "N0", null },
+        { 123456, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
+
+        { 123456L, "123,456", "N0", null },
+        { 123456L, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
+
+        { (short)12356, "12,356", "N0", null },
+
+        { 1234567890121UL, "1,234,567,890,121", "N0", null },
+        { 75849584532321U, "75 849 584 532 321", "### ### ### ### ###", null },
+
+        { (byte)128, "80", "X2", null },
+        { (sbyte)-80, "B0", "X2", null },
+
+        { (uint)256, "100", "X2", null },
+        { (ushort)80, "50", "X2", null },
+
+        { true,  "True", "'Y','N'", null }, // format ignored...
+        { false, "False", "'Y','N'", null },
+
+        {  new Guid("e9cc294d-0a31-481b-bc61-f677c1392516"), "{0xe9cc294d,0x0a31,0x481b,{0xbc,0x61,0xf6,0x77,0xc1,0x39,0x25,0x16}}", "X", null },
+        { Guid.Empty, "(00000000-0000-0000-0000-000000000000)", "P", null },
+        
+        { new DateTime(2025, 7, 18), "7/18/2025 12:00:00 AM", null, CultureInfo.GetCultureInfo("en-US") },
+        { new DateTime(2025, 12, 31), "2025-Dec-31 00:00:00", "yyyy-MMM-dd HH:mm:ss", CultureInfo.GetCultureInfo("en-US") },
+
+        { new DateOnly(2025, 7, 18), "07/18/2025", null, null },
+        { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd", null },
+
+        { new TimeOnly(20, 45, 32), "08.45.32", "hh.mm.ss", null },
+        
+        { new TimeSpan(8, 45, 32), "08:45:32", null, CultureInfo.GetCultureInfo("fi-FI") },
+        { new TimeSpan(8, 45, 32), "08:45:32", null, null },
+
+        { 123.456, "123.456", null, null },
+        { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
+        { 'A', "A", null, null },
+        { ' ', " ", null, null },
+        { '\u2192', "\u2192", null, null },
+        { 1.5E-5d, "1.5E-05", null, null },
+
+        { new Bucket<string>(["a", "b"]), "a:0 b:0", null, null },
     };
     #endregion
     #endregion
@@ -355,6 +405,29 @@ public class ValueConverterTests
         var value = ValueConverter.Parse(input, type);
 
         Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("2024-08-09")]
+    public void GenericParse(string input)
+    {
+        var value1 = ValueConverter.Parse<DateOnly>(input);
+        
+        Assert.True(ValueConverter.TryParse(input, out DateOnly value2));
+        
+        Assert.Equal(new DateOnly(2024, 8, 9), value1);
+        Assert.Equal(new DateOnly(2024, 8, 9), value2);
+    }
+
+    [Theory]
+    [InlineData("2024-31-27")]
+    public void GenericParseFails(string input)
+    {
+        Assert.Throws<FormatException>(() => ValueConverter.Parse<DateOnly>(input));
+        
+        Assert.False(ValueConverter.TryParse(input, out DateOnly value2));
+        
+        Assert.Equal(DateOnly.MinValue, value2);
     }
 
     [Theory]

@@ -6,8 +6,8 @@ namespace Stellar.Common;
 /// <summary>
 /// A generic buffer filled by a callback.
 /// </summary>
- [ExcludeFromCodeCoverage(Justification = "Fully tested by Stellar.IO")]
- public class Buffer<T>
+[ExcludeFromCodeCoverage(Justification = "Fully tested by Stellar.IO")]
+public class Buffer<T>
 {
     private readonly Func<T[], int, int>? fillCallback;
 

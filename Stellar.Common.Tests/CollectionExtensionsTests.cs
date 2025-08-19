@@ -132,6 +132,12 @@ public class CollectionExtensionsTests
 		var hash = merge.Hash();
 
 		Assert.Equal(new Guid("335e2b2c-e82a-316f-735c-357e412f2c5e"), hash);
+
+		merge.AddOrUpdate("five", -5);
+		merge.AddOrUpdate("six", 6);
+		
+		Assert.Equal(-5, merge["five"]);
+		Assert.Equal(6, merge["six"]);
     }
     #endregion
 }

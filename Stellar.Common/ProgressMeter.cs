@@ -1,5 +1,8 @@
-﻿namespace Stellar.Common;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace Stellar.Common;
+
+[ExcludeFromCodeCoverage(Justification = "No use cases yet.")]
 public class ProgressMeter(int capacity = 100, int step = 10)
 {
     private readonly int step = step.Clamp(1, capacity);

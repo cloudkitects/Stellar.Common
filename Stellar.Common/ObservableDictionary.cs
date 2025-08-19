@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 using Stellar.Common.Resources;
 
@@ -11,6 +12,7 @@ namespace Stellar.Common;
 /// </summary>
 /// <typeparam name="TKey">The key type.</typeparam>
 /// <typeparam name="TValue">The value type.</typeparam>
+[ExcludeFromCodeCoverage(Justification = "No use cases yet.")]
 [Serializable]
 public class ObservableDictionary<TKey, TValue>
     : IDictionary<TKey, TValue>, IReadOnlyList<TValue>, INotifyCollectionChanged where TKey : notnull
