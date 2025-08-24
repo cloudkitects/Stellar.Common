@@ -109,6 +109,8 @@ public class FileNameParserTests
         var values = line?.Split('\t');
 
         Assert.Equal(expected, values![2]);
+
+        Assert.Equal(Encoding.Default, ValueConverter.ParseEncoding("bogus"));
     }
 
     public static TheoryData<string, string> NoMatchFiles => new()

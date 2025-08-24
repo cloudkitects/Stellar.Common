@@ -63,26 +63,6 @@ public class ValueConverterTests
     };
     #endregion
 
-    #region enum
-    public static TheoryData<string, TrimmingOptions> Enum1 => new()
-    {
-        { "   Both   ", TrimmingOptions.Both },
-        { "Start ", TrimmingOptions.Start },
-        { "   End", TrimmingOptions.End },
-        { "None", TrimmingOptions.None },
-        { "", TrimmingOptions.None }
-    };
-
-    public static TheoryData<string, TrimmingOptions?> Enum2 => new()
-    {
-        { "   Both   ", TrimmingOptions.Both },
-        { "Start ", TrimmingOptions.Start },
-        { "   End", TrimmingOptions.End },
-        { "None", TrimmingOptions.None },
-        { "", null }
-    };
-    #endregion
-
     #region datetime
     public static TheoryData<string, DateTime> DateTimes => new()
     {
@@ -200,101 +180,51 @@ public class ValueConverterTests
     };
     #endregion
 
-    #region object
-    public static TheoryData<object?, Type, object?> Objects => new()
-    {
-        { true, typeof(bool), true },
-        { false, typeof(bool), false },
-        { DBNull.Value, typeof(bool), null },
-    };
-
-    public static TheoryData<object?, Type, object?, IFormatProvider?, object?> ObjectsWithOptions => new()
-    {
-        { true, typeof(bool), null, null, true },
-        { false, typeof(bool), null, null, false },
-        { DBNull.Value, typeof(bool), null, null, null },
-        { DBNull.Value, typeof(bool), false, null, false },
-
-        { 12.34, typeof(double), 0.0, null, 12.34 },
-        { "12,34", typeof(double), 0.0, CultureInfo.GetCultureInfo("de-DE"), 12.34 },
-        { "25/12/2025", typeof(DateOnly), null, CultureInfo.GetCultureInfo("fr-FR"), new DateOnly(2025, 12, 25) }
-    };
-
-    #endregion
-
     #region to string
     public static TheoryData<object?, string, string?, IFormatProvider?> ToStringData => new()
     {
-        { true, "True", null, null },
-        { false, "False", null, null },
         { "", "", null, null },
-        { null !, "", null, null },
-
-        { new DateTime(2025, 7, 18), "07/18/2025 00:00:00", null, null },
-        { new DateTime(2025, 7, 18, 20, 45, 32), "2025-Jul-18 20:45:32", "yyyy-MMM-dd HH:mm:ss", null },
-        
-        { DateTimeOffset.FromUnixTimeSeconds(7), "00:00:07", "HH:mm:ss", null },
-        
-        { new DateOnly(2025, 7, 18), "07/18/2025", null, null },
-        { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd", null },
-        
-        { new TimeOnly(20, 45, 32), "20:45", null, null },
-        
-        { new TimeSpan(8, 45, 32), "08:45:32", null, CultureInfo.GetCultureInfo("fi-FI") },
-        { new TimeSpan(8, 45, 32), "08:45:32", null, null },
-
-        { 123.456, "123.456", null, null },
-        { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
-        { 'A', "A", null, null },
+        { ' ', " ", null, null },
         { ' ', " ", null, null },
         { '\u2192', "\u2192", null, null },
-        { 1.5E-5d, "1.5E-05", null, null },
-        { 1.5E-5d, "0.0000150000", "N10", null },
-        { 1.54321E-3f, "1.54321E-003", "E5", null },
-        { 1987.6m, "$1,987.60", "C2", CultureInfo.GetCultureInfo("en-US") },
-
-        { 123456, "123,456", "N0", null },
-        { 123456, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
-
-        { 123456L, "123,456", "N0", null },
-        { 123456L, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
-
-        { (short)12356, "12,356", "N0", null },
-
-        { 1234567890121UL, "1,234,567,890,121", "N0", null },
-        { 75849584532321U, "75 849 584 532 321", "### ### ### ### ###", null },
-
+        { 'A', "A", null, null },
         { (byte)128, "80", "X2", null },
         { (sbyte)-80, "B0", "X2", null },
-
+        { (short)12356, "12,356", "N0", null },
         { (uint)256, "100", "X2", null },
         { (ushort)80, "50", "X2", null },
-
-        { true,  "True", "'Y','N'", null }, // format ignored...
+        { 1.54321E-3f, "1.54321E-003", "E5", null },
+        { 1.5E-5d, "0.0000150000", "N10", null },
+        { 1.5E-5d, "1.5E-05", null, null },
+        { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
+        { 123.456, "123.456", null, null },
+        { 123456, "123,456", "N0", null },
+        { 123456, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
+        { 1234567890121UL, "1,234,567,890,121", "N0", null },
+        { 123456L, "123,456", "N0", null },
+        { 123456L, "123.456", "N0", CultureInfo.GetCultureInfo("de-DE") },
+        { 1987.6m, "$1,987.60", "C2", CultureInfo.GetCultureInfo("en-US") },
+        { 75849584532321U, "75 849 584 532 321", "### ### ### ### ###", null },
+        { DateTimeOffset.FromUnixTimeSeconds(7), "00:00:07", "HH:mm:ss", null },
         { false, "False", "'Y','N'", null },
-
-        {  new Guid("e9cc294d-0a31-481b-bc61-f677c1392516"), "{0xe9cc294d,0x0a31,0x481b,{0xbc,0x61,0xf6,0x77,0xc1,0x39,0x25,0x16}}", "X", null },
+        { false, "False", null, null },
         { Guid.Empty, "(00000000-0000-0000-0000-000000000000)", "P", null },
-        
-        { new DateTime(2025, 7, 18), "7/18/2025 12:00:00 AM", null, CultureInfo.GetCultureInfo("en-US") },
-        { new DateTime(2025, 12, 31), "2025-Dec-31 00:00:00", "yyyy-MMM-dd HH:mm:ss", CultureInfo.GetCultureInfo("en-US") },
-
+        { new Bucket<string>(["a", "b"]), "a:0 b:0", "JSON", null },
+        { new Bucket<string>(["a", "b"]), "a:0 b:0", null, null },
         { new DateOnly(2025, 7, 18), "07/18/2025", null, null },
         { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd", null },
-
+        { new DateTime(2025, 12, 31), "2025-Dec-31 00:00:00", "yyyy-MMM-dd HH:mm:ss", CultureInfo.GetCultureInfo("en-US") },
+        { new DateTime(2025, 7, 18), "07/18/2025 00:00:00", null, null },
+        { new DateTime(2025, 7, 18), "7/18/2025 12:00:00 AM", null, CultureInfo.GetCultureInfo("en-US") },
+        { new DateTime(2025, 7, 18, 20, 45, 32), "2025-Jul-18 20:45:32", "yyyy-MMM-dd HH:mm:ss", null },
+        { new Guid("e9cc294d-0a31-481b-bc61-f677c1392516"), "{0xe9cc294d,0x0a31,0x481b,{0xbc,0x61,0xf6,0x77,0xc1,0x39,0x25,0x16}}", "X", null },
         { new TimeOnly(20, 45, 32), "08.45.32", "hh.mm.ss", null },
-        
+        { new TimeOnly(20, 45, 32), "20:45", null, null },
         { new TimeSpan(8, 45, 32), "08:45:32", null, CultureInfo.GetCultureInfo("fi-FI") },
         { new TimeSpan(8, 45, 32), "08:45:32", null, null },
-
-        { 123.456, "123.456", null, null },
-        { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
-        { 'A', "A", null, null },
-        { ' ', " ", null, null },
-        { '\u2192', "\u2192", null, null },
-        { 1.5E-5d, "1.5E-05", null, null },
-
-        { new Bucket<string>(["a", "b"]), "a:0 b:0", null, null },
+        { null!, "", null, null },
+        { true,  "True", "'Y','N'", null },
+        { true, "True", null, null }
     };
     #endregion
     #endregion
@@ -347,6 +277,14 @@ public class ValueConverterTests
         Assert.Equal(expected, ValueConverter.ParseNullableChar(input!, trimmingOptions));
     }
 
+    public static TheoryData<string, TrimmingOptions> Enum1 => new()
+    {
+        { "   Both   ", TrimmingOptions.Both },
+        { "Start ", TrimmingOptions.Start },
+        { "   End", TrimmingOptions.End },
+        { "None", TrimmingOptions.None }
+    };
+
     [Theory]
     [MemberData(nameof(Enum1))]
     public void ToEnum(string input, TrimmingOptions expected)
@@ -355,21 +293,34 @@ public class ValueConverterTests
     }
 
     [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("Extra")]
+    public void ParseEnumThrows(string input)
+    {
+        Assert.Throws<FormatException>(() => ValueConverter.ParseEnum<TrimmingOptions>(input));
+    }
+
+
+    public static TheoryData<string, TrimmingOptions?> Enum2 => new()
+    {
+        { "   Both   ", TrimmingOptions.Both },
+        { "Start ", TrimmingOptions.Start },
+        { "   End", TrimmingOptions.End },
+        { "None", TrimmingOptions.None },
+        { "", null }
+    };
+
+    [Theory]
     [MemberData(nameof(Enum2))]
-    public void ToNullableEnum(string input, TrimmingOptions? expected)
+    public void ParseNullableEnum(string input, TrimmingOptions? expected)
     {
         Assert.Equal(expected, ValueConverter.ParseNullableEnum<TrimmingOptions>(input));
     }
 
-    [Fact]
-    public void ToEnumThrows()
-    {
-        Assert.Throws<FormatException>(() => ValueConverter.ParseEnum("bogus", TrimmingOptions.None));
-    }
-
     [Theory]
     [MemberData(nameof(DateTimes))]
-    public void ToDateTime(string input, DateTime expected)
+    public void ParseDateTime(string input, DateTime expected)
     {
         ValueConverter.AddDateTimeFormats([
             "MMM dd HH:mm",
@@ -381,14 +332,14 @@ public class ValueConverterTests
 
     [Theory]
     [MemberData(nameof(Dates))]
-    public void ToDate(string input, DateOnly expected)
+    public void ParseDate(string input, DateOnly expected)
     {
         Assert.Equal(expected, ValueConverter.ParseDate(input));
     }
 
     [Theory]
     [MemberData(nameof(Times))]
-    public void ToTime(string input, TimeOnly expected)
+    public void ParseTime(string input, TimeOnly expected)
     {
         var format = "HH.mm.ss";
 
@@ -398,9 +349,16 @@ public class ValueConverterTests
         Assert.Equal(expected, ValueConverter.ParseTime(input));
     }
 
+    public static TheoryData<object, Type, object?> Objects => new()
+    {
+        //{ true, typeof(bool), true },
+        //{ false, typeof(bool), false },
+        { DBNull.Value, typeof(bool), null },
+    };
+
     [Theory]
     [MemberData(nameof(Objects))]
-    public void FromObject(object? input, Type type, object? expected)
+    public void ParseObject(object input, Type type, object? expected)
     {
         var value = ValueConverter.Parse(input, type);
 
@@ -409,33 +367,101 @@ public class ValueConverterTests
 
     [Theory]
     [InlineData("2024-08-09")]
-    public void GenericParse(string input)
+    public void ParseGeneric(string input)
     {
         var value1 = ValueConverter.Parse<DateOnly>(input);
-        
+
         Assert.True(ValueConverter.TryParse(input, out DateOnly value2));
-        
+
         Assert.Equal(new DateOnly(2024, 8, 9), value1);
         Assert.Equal(new DateOnly(2024, 8, 9), value2);
     }
 
     [Theory]
     [InlineData("2024-31-27")]
-    public void GenericParseFails(string input)
+    public void ParseGenericThrows(string input)
     {
         Assert.Throws<FormatException>(() => ValueConverter.Parse<DateOnly>(input));
-        
+
         Assert.False(ValueConverter.TryParse(input, out DateOnly value2));
-        
+
         Assert.Equal(DateOnly.MinValue, value2);
     }
 
+    public static TheoryData<object?, Type, object?, IFormatProvider?, object?> ObjectsWithOptions => new()
+    {
+        { true, typeof(bool), null, null, true },
+        { false, typeof(bool), null, null, false },
+        { DBNull.Value, typeof(bool), null, null, null },
+        { DBNull.Value, typeof(bool), false, null, false },
+
+        { 12.34, typeof(double), 0.0, null, 12.34 },
+        { "12,34", typeof(double), 0.0, CultureInfo.GetCultureInfo("de-DE"), 12.34 },
+        { "25/12/2025", typeof(DateOnly), null, CultureInfo.GetCultureInfo("fr-FR"), new DateOnly(2025, 12, 25) },
+        { "lorem ipsum", typeof(string), null, CultureInfo.GetCultureInfo("fr-FR"), "lorem ipsum" },
+        { "12", typeof(decimal?), -1m, null, 12m },
+        { null, typeof(decimal?), -1m, null, -1m }
+    };
+
     [Theory]
     [MemberData(nameof(ObjectsWithOptions))]
-    public void FromObjectWithOptions(object? input, Type type, object? defaultValue, IFormatProvider? culture, object? expected)
+    public void ParseObjectWithOptions(object? input, Type type, object? defaultValue, IFormatProvider? culture, object? expected)
     {
         var value = ValueConverter.Parse(input, type, defaultValue, culture);
 
         Assert.Equal(expected, value);
+    }
+
+    [Fact]
+    public void TriesToParse()
+    {
+        Assert.False(ValueConverter.TryParse(null!, out var value1, -1m, null));
+        Assert.Equal(-1m, value1);
+
+        Assert.False(ValueConverter.TryParse("", out decimal value2));
+        Assert.Equal(0m, value2);
+
+        Assert.True(ValueConverter.TryParse("23.42", out decimal _));
+
+        Assert.True(ValueConverter.TryParse("end", out TrimmingOptions _));
+        Assert.True(ValueConverter.TryParse("e9cc294d-0a31-481b-bc61-f677c1392516", out Guid _));
+        Assert.True(ValueConverter.TryParse("23:15:49", out TimeOnly _));
+        Assert.True(ValueConverter.TryParse("23:15:49", out DateTime _));
+        Assert.True(ValueConverter.TryParse("67", out int _));
+        Assert.True(ValueConverter.TryParse("2345098756589879898", out long _));
+        Assert.True(ValueConverter.TryParse("11.33", out float _));
+        Assert.True(ValueConverter.TryParse("234", out short _));
+        Assert.True(ValueConverter.TryParse("253", out byte _));
+        Assert.True(ValueConverter.TryParse("-128", out sbyte _));
+        Assert.True(ValueConverter.TryParse("67", out ushort _));
+        Assert.True(ValueConverter.TryParse("32454", out uint _));
+        Assert.True(ValueConverter.TryParse("18446744073709551615", out ulong _));
+        Assert.True(ValueConverter.TryParse("c", out char _));
+
+        Assert.False(ValueConverter.TryParse("extra", out TrimmingOptions _));
+        Assert.False(ValueConverter.TryParse("481bf677c1392516", out Guid _));
+        Assert.False(ValueConverter.TryParse("65:78:99", out TimeOnly _));
+        Assert.False(ValueConverter.TryParse("31-12-1921", out DateTime _));
+        Assert.False(ValueConverter.TryParse("NaN", out int _));
+        Assert.False(ValueConverter.TryParse("NotANumber", out long _));
+        Assert.False(ValueConverter.TryParse("NaN!", out float _));
+        Assert.False(ValueConverter.TryParse("what?", out short _));
+        Assert.False(ValueConverter.TryParse("me", out byte _));
+        Assert.False(ValueConverter.TryParse("-=1", out sbyte _));
+        Assert.False(ValueConverter.TryParse("no, u short", out ushort _));
+        Assert.False(ValueConverter.TryParse("I'm in", out uint _));
+        Assert.False(ValueConverter.TryParse("you know it", out ulong _));
+        Assert.False(ValueConverter.TryParse("cc", out char _));
+
+        Assert.Throws<ArgumentException>(() => ValueConverter.TryParse("55", out ValueType value3, -1m, null));
+        
+        Assert.Throws<FormatException>(() => ValueConverter.ParseChar("obj"));
+        Assert.Equal('x', ValueConverter.ParseChar("x"));
+        Assert.False(ValueConverter.TryParseChar("obj", out char _));
+        Assert.False(ValueConverter.TryParseChar(string.Empty, out char _));
+
+        Assert.False(ValueConverter.TryParseNullableDecimal("d", out decimal? d));
+        Assert.Null(d);
+
     }
 }
