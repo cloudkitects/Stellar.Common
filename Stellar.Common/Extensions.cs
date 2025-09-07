@@ -44,7 +44,7 @@ public static partial class Extensions
         return new Guid([.. hash]);
     }
 
-    public static string? NullIfEmpty(this string value)
+    public static string? NullIfWhitespace(this string value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
@@ -135,24 +135,6 @@ public static partial class Extensions
         var start = new DateTime(datetime.Year, 1, 1);
 
         return Convert.ToInt32($"{datetime.Year:D4}{Convert.ToInt32((datetime - start).TotalDays)}");
-    }
-    #endregion
-
-    #region culture info
-    public static CultureInfo CreateCultureInfo(this string name)
-    {
-        CultureInfo cultureInfo;
-
-        try
-        {
-            cultureInfo = CultureInfo.CreateSpecificCulture(name);
-        }
-        catch
-        {
-            cultureInfo = CultureInfo.CurrentCulture;
-        }
-
-        return cultureInfo;
     }
     #endregion
 

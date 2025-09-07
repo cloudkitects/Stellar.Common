@@ -1,5 +1,4 @@
 ﻿using System.Dynamic;
-using System.Globalization;
 
 namespace Stellar.Common.Tests;
 
@@ -158,8 +157,8 @@ public class ExtensionsTests
 
         Assert.True(s.IsNullOrWhiteSpace());
         Assert.True(t.IsNullOrEmpty());
-        Assert.Null(t.NullIfEmpty());
-        Assert.NotNull(j.NullIfEmpty());
+        Assert.Null(t.NullIfWhitespace());
+        Assert.NotNull(j.NullIfWhitespace());
 
         Assert.True(m.IsNumericAt(0));
         Assert.True(n.IsNumericAt(0));
@@ -182,23 +181,6 @@ public class ExtensionsTests
 
         Assert.Equal(364, date.YearTotalDays());
         Assert.Equal(2023287, date.ToJulianDate());
-    }
-    #endregion
-
-    #region globalization
-    [Fact]
-    public void ExtendsCultureInfo()
-    {
-        var culture = "ISO-8859-1".CreateCultureInfo();
-
-        Assert.Equal("Invariant Language (Invariant Country)", culture.DisplayName);
-        Assert.Equal("Invariant Language (Invariant Country)", culture.NativeName);
-        Assert.Equal("MM/dd/yyyy", culture.DateTimeFormat.ShortDatePattern);
-        Assert.Equal("HH:mm:ss", culture.DateTimeFormat.LongTimePattern);
-        
-        culture = "bogus".CreateCultureInfo();
-
-        Assert.Equal(CultureInfo.CurrentCulture, culture);
     }
     #endregion
 
