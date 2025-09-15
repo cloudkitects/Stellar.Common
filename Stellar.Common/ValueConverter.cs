@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Stellar.Common;
 
@@ -13,11 +12,9 @@ namespace Stellar.Common;
 public static class ValueConverter
 {
     #region styles
-    /// <summary>
-    /// A composite of Integer == AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign.
-    /// </summary>
     public static NumberStyles IntegerNumberStyles { get; set; } = NumberStyles.Integer | NumberStyles.AllowThousands;
-    public static NumberStyles FloatingPointNumberStyles { get; set; } = NumberStyles.Float;
+    public static NumberStyles FloatingPointNumberStyles { get; set; } = NumberStyles.Float | NumberStyles.AllowThousands;
+    public static NumberStyles DecimalNumberStyles { get; set; } = FloatingPointNumberStyles | NumberStyles.AllowParentheses | NumberStyles.AllowCurrencySymbol;
     public static DateTimeStyles DateTimeStyles { get; set; } = DateTimeStyles.None;
     public static TimeSpanStyles TimeStyles { get; set; } = TimeSpanStyles.None;
     #endregion
@@ -320,21 +317,21 @@ public static class ValueConverter
 
             case TypeCode.Int64:
                 {
-                    r = TryParseLong(input, out var output, (long)defaultValue, culture, trimmingOptions);
+                    r = TryParseLong(input, out var output, (long)defaultValue, culture);
                     value = output;
                     break;
                 }
 
             case TypeCode.Double:
                 {
-                    r = TryParseDouble(input, out var output, (double)defaultValue, culture, trimmingOptions);
+                    r = TryParseDouble(input, out var output, (double)defaultValue, culture);
                     value = output;
                     break;
                 }
 
             case TypeCode.Decimal:
                 {
-                    r = TryParseDecimal(input, out var output, (decimal)defaultValue, culture, trimmingOptions);
+                    r = TryParseDecimal(input, out var output, (decimal)defaultValue, culture);
                     value = output;
                     break;
                 }
@@ -355,7 +352,7 @@ public static class ValueConverter
 
             case TypeCode.Single:
                 {
-                    r = TryParseFloat(input, out var output, (float)defaultValue, culture, trimmingOptions);
+                    r = TryParseFloat(input, out var output, (float)defaultValue, culture);
                     value = output;
                     break;
                 }
@@ -397,7 +394,7 @@ public static class ValueConverter
 
             case TypeCode.UInt64:
                 {
-                    r = TryParseULong(input, out var output, (ulong)defaultValue, culture, trimmingOptions);
+                    r = TryParseULong(input, out var output, (ulong)defaultValue, culture);
                     value = output;
                     break;
                 }
@@ -419,30 +416,31 @@ public static class ValueConverter
     #endregion
 
     #region known type
-    #region boolean
+    #region bool
     public static bool ParseBoolean(
         string input,
-        bool defaultValue = false)
+        bool? defaultValue = default)
     {
-        return TryOrThrow(TryParseBoolean(input, out bool value, defaultValue), input, value);
+        return TryOrThrow(TryParseBoolean(input, out var value, defaultValue), input, value);
     }
 
     public static bool TryParseBoolean(
         string input,
         out bool value,
-        bool defaultValue = false)
+        bool? defaultValue = null)
     {
         if (bool.TryParse(input, out value))
         {
             return true;
         }
 
-        value = defaultValue;
+        value = defaultValue ?? default;
 
         return false;
     }
 
-    public static bool? ParseNullableBoolean(string input)
+    public static bool? ParseNullableBoolean(
+        string input)
     {
         return TryOrThrow(TryParseNullableBoolean(input, out var value), input, value);
     }
@@ -451,14 +449,14 @@ public static class ValueConverter
         string input,
         out bool? value)
     {
-        if (TryParseBoolean(input, out bool parsedValue))
+        if (TryParseBoolean(input, out var v))
         {
-            value = parsedValue;
+            value = v;
 
             return true;
         }
-
-        value = default;
+        
+        value = null;
 
         return false;
     }
@@ -467,7 +465,7 @@ public static class ValueConverter
     #region char
     public static char ParseChar(
         string input,
-        char defaultValue = '\0',
+        char defaultValue = default,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
         return TryOrThrow(TryParseChar(input, out var value, defaultValue, trimmingOptions), input, value);
@@ -476,22 +474,24 @@ public static class ValueConverter
     public static bool TryParseChar(
     string input,
     out char value,
-    char defaultValue = '\0',
+    char defaultValue = default,
     TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
         var trimmed = Trim(input, trimmingOptions);
 
-        if (string.IsNullOrEmpty(trimmed))
+        if (char.TryParse(trimmed, out value))
         {
-            value = defaultValue;
-
-            return false;
+            return true;
         }
+        
+        value = defaultValue;
 
-        return char.TryParse(trimmed, out value);
+        return false;
     }
 
-    public static char? ParseNullableChar(string input, TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    public static char? ParseNullableChar(
+        string input,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
         return TryOrThrow(TryParseNullableChar(input, out var value, trimmingOptions), input, value);
     }
@@ -503,11 +503,15 @@ public static class ValueConverter
     {
         var trimmed = Trim(input, trimmingOptions);
 
-        var r = char.TryParse(trimmed, out char v);
+        if (char.TryParse(trimmed, out char parsedValue))
+        {
+            value = parsedValue;
+            return true;
+        }
 
-        value = v;
+        value = null;
 
-        return r;
+        return false;
     }
     #endregion
 
@@ -1371,331 +1375,254 @@ public static class ValueConverter
     #region long
     public static long ParseLong(
         string input,
-        long? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        long? defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseLong(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseLong(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseLong(
         string input,
         out long value,
         long? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (long.TryParse(input, IntegerNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? long.MinValue;
-
-            return false;
+            return true;
         }
 
-        return long.TryParse(trimmed, IntegerNumberStyles, culture, out value);
+        value = defaultValue ?? default;
+
+        return false;
     }
 
     public static long? ParseNullableLong(
         string input,
-        long? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableLong(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableLong(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableLong(
         string input,
         out long? value,
-        long? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseLong(input, out var v, culture: culture))
         {
-            value = defaultValue ?? long.MinValue;
+            value = v;
 
-            return false;
+            return true;
         }
+        
+        value = null;
 
-        var r = long.TryParse(trimmed, IntegerNumberStyles, culture, out var v);
-
-        value = v;
-
-        return r;
+        return false;
     }
     #endregion
 
     #region ulong
     public static ulong ParseULong(
         string input,
-        ulong? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        ulong? defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseULong(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseULong(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseULong(
         string input,
         out ulong value,
         ulong? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (ulong.TryParse(input, IntegerNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? ulong.MinValue;
-
-            return false;
+            return true;
         }
 
-        return ulong.TryParse(trimmed, IntegerNumberStyles, culture, out value);
+        value = defaultValue ?? default;
+
+        return false;
     }
 
     public static ulong? ParseNullableULong(
         string input,
-        ulong? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableULong(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableULong(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableULong(
         string input,
         out ulong? value,
-        ulong? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseULong(input, out var v, culture: culture))
         {
-            value = defaultValue ?? ulong.MinValue;
+            value = v;
 
-            return false;
+            return true;
         }
+        
+        value = null;
 
-        var r = ulong.TryParse(trimmed, IntegerNumberStyles, culture, out var v);
-
-        value = v;
-
-        return r;
+        return false;
     }
     #endregion
 
     #region float
     public static float ParseFloat(
         string input,
-        float? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        float? defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseFloat(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseFloat(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseFloat(
         string input,
         out float value,
         float? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (float.TryParse(input, FloatingPointNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? float.MinValue;
-
-            return false;
+            return true;
         }
 
-        return float.TryParse(trimmed, FloatingPointNumberStyles, culture, out value);
+        value = defaultValue ?? default;
+
+        return false;
     }
 
     public static float? ParseNullableFloat(
         string input,
-        float? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableFloat(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableFloat(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableFloat(
         string input,
         out float? value,
-        float? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseFloat(input, out var v, culture: culture))
         {
-            value = defaultValue ?? float.MinValue;
+            value = v;
 
-            return false;
+            return true;
         }
+        
+        value = null;
 
-        var r = float.TryParse(trimmed, FloatingPointNumberStyles, culture, out var v);
-
-        value = v;
-
-        return r;
+        return false;
     }
     #endregion
 
     #region double
     public static double ParseDouble(
         string input,
-        double? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        double? defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseDouble(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseDouble(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseDouble(
         string input,
         out double value,
         double? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (double.TryParse(input, FloatingPointNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? double.MinValue;
-
-            return false;
+            return true;
         }
 
-        return double.TryParse(trimmed, FloatingPointNumberStyles, culture, out value);
+        value = defaultValue ?? default;
+
+        return false;
     }
 
     public static double? ParseNullableDouble(
         string input,
-        double? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableDouble(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableDouble(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableDouble(
         string input,
         out double? value,
-        double? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseDouble(input, out var v, culture: culture))
         {
-            value = defaultValue ?? double.MinValue;
+            value = v;
 
-            return false;
+            return true;
         }
+        
+        value = null;
 
-        var r = double.TryParse(trimmed, FloatingPointNumberStyles, culture, out var v);
-
-        value = v;
-
-        return r;
+        return false;
     }
     #endregion
 
-    #region Decimal
+    #region decimal
     public static decimal ParseDecimal(
         string input,
-        decimal? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        decimal? defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseDecimal(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseDecimal(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseDecimal(
         string input,
         out decimal value,
         decimal? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (decimal.TryParse(input, DecimalNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? decimal.MinValue;
-
-            return false;
+            return true;
         }
 
-        return decimal.TryParse(trimmed, FloatingPointNumberStyles, culture, out value);
+        value = defaultValue ?? default;
+
+        return false;
     }
 
     public static decimal? ParseNullableDecimal(
         string input,
-        decimal? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableDecimal(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableDecimal(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableDecimal(
         string input,
         out decimal? value,
-        decimal? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (decimal.TryParse(trimmed, FloatingPointNumberStyles, culture, out var v))
+        if (TryParseDecimal(input, out var v, culture: culture))
         {
             value = v;
+
             return true;
         }
-
-        value = defaultValue;
+        
+        value = null;
 
         return false;
     }
     #endregion
 
-        #region culture info
+    #region culture info
     public static CultureInfo ParseCultureInfo(string? name)
     {
         CultureInfo cultureInfo = CultureInfo.InvariantCulture;
