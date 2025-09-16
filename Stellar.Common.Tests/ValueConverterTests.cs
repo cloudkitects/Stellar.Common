@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Reflection;
 
 namespace Stellar.Common.Tests;
 
@@ -1084,11 +1085,11 @@ public partial class ValueConverterTests
     #region char
     [Theory]
     [MemberData(nameof(CharData))]
-    public void TriesToParseChar(string input, char? defaultValue, bool expectedResult, char expected)
+    public void TriesToParseChar(string input, char? defaultValue, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
     {
         var result = defaultValue is not null
-            ? ValueConverter.TryParseChar(input, out char value, defaultValue.Value)
-            : ValueConverter.TryParseChar(input, out value);
+            ? ValueConverter.TryParseChar(input, out char value, defaultValue.Value, trimmingOptions)
+            : ValueConverter.TryParseChar(input, out value, trimmingOptions: trimmingOptions);
 
         Assert.Equal(expectedResult, result);
         Assert.Equal(expected, value);
@@ -1096,7 +1097,7 @@ public partial class ValueConverterTests
 
     [Theory]
     [MemberData(nameof(CharData))]
-    public void ParsesCharOrThrows(string input, char? defaultValue, bool expectedResult, char expected)
+    public void ParsesCharOrThrows(string input, char? defaultValue, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
     {
         var index = defaultValue is not null
             ? 1
@@ -1104,8 +1105,8 @@ public partial class ValueConverterTests
 
         Func<char> action = index switch
         {
-            1 => () => ValueConverter.ParseChar(input, defaultValue!.Value),
-            _ => () => ValueConverter.ParseChar(input),
+            1 => () => ValueConverter.ParseChar(input, defaultValue!.Value, trimmingOptions),
+            _ => () => ValueConverter.ParseChar(input, trimmingOptions: trimmingOptions),
         };
 
         if (!expectedResult)
@@ -1120,13 +1121,10 @@ public partial class ValueConverterTests
 
     [Theory]
     [MemberData(nameof(CharData))]
-    public void TriesToParseNullableChar(string input, char? defaultValue, bool expectedResult, char expected)
+    public void TriesToParseNullableChar(string input, char? _, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
     {
-        char? value = null;
 
-        var result = defaultValue is not null
-            ? ValueConverter.TryParseNullableChar(input, out value)
-            : ValueConverter.TryParseNullableChar(input, out value);
+        var result = ValueConverter.TryParseNullableChar(input, out char? value, trimmingOptions);
 
         Assert.Equal(expectedResult, result);
         
@@ -1142,9 +1140,9 @@ public partial class ValueConverterTests
 
     [Theory]
     [MemberData(nameof(CharData))]
-    public void ParsesNullableCharOrThrows(string input, char? _, bool expectedResult, char expected)
+    public void ParsesNullableCharOrThrows(string input, char? _, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
     {
-        char? action() => ValueConverter.ParseNullableChar(input);
+        char? action() => ValueConverter.ParseNullableChar(input, trimmingOptions);
 
         if (!expectedResult)
         {
@@ -1157,4 +1155,118 @@ public partial class ValueConverterTests
     }
     #endregion
 
+    #region enum
+    [Theory]
+    [MemberData(nameof(Enum1Data))]
+    public void TriesToParseEnum(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        Enum1? value = default;
+        
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<bool> action = index switch
+        {
+            3 => () => ValueConverter.TryParseEnum(input, out value, defaultValue!.Value, trimmingOptions!.Value),
+            2 => () => ValueConverter.TryParseEnum(input, out value, trimmingOptions: trimmingOptions!.Value),
+            1 => () => ValueConverter.TryParseEnum(input, out value, defaultValue!.Value),
+            _ => () => ValueConverter.TryParseEnum(input, out value),
+        };
+
+        Assert.Equal(expectedResult, action());
+        Assert.Equal(expected!.Value, value);
+    }
+
+    [Theory]
+    [MemberData(nameof(Enum1Data))]
+    public void GenericParsesEnumOrThrows(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<Enum1> action = index switch
+        {
+            3 => () => ValueConverter.ParseEnum(input, defaultValue!.Value, trimmingOptions!.Value),
+            2 => () => ValueConverter.ParseEnum<Enum1>(input, trimmingOptions: trimmingOptions!.Value),
+            1 => () => ValueConverter.ParseEnum(input, defaultValue!.Value),
+            _ => () => ValueConverter.ParseEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Enum1Data))]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2263:Prefer generic overload when type is known", Justification = "Compile v. run time type knowledge.")]
+    public void ParsesEnumOrThrows(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<object> action = index switch
+        {
+            3 => () => ValueConverter.ParseEnum(typeof(Enum1), input, defaultValue!.Value, trimmingOptions!.Value),
+            _ => () => ValueConverter.ParseEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Enum1Data))]
+    public void TriesToParseNullableEnum(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        Enum1? value = default;
+        
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<bool> action = index switch
+        {
+            3 => () => ValueConverter.TryParseNullableEnum(input, out value, trimmingOptions!.Value),
+            _ => () => ValueConverter.TryParseNullableEnum(input, out value),
+        };
+
+        Assert.Equal(expectedResult, action());
+        
+        if (!expectedResult)
+        {
+            Assert.Null(value);
+        }
+        else
+        {
+            Assert.Equal(expected, value);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Enum1Data))]
+    public void ParsesNullableEnumOrThrows(string input, Enum1? _, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        Func<Enum1?> action = (trimmingOptions is not null ? 1 : 0) switch
+        {
+            1 => () => ValueConverter.ParseNullableEnum<Enum1>(input, trimmingOptions!.Value),
+            _ => () => ValueConverter.ParseNullableEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
 }

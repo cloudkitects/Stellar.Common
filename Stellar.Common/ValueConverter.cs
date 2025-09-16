@@ -416,188 +416,6 @@ public static class ValueConverter
     #endregion
 
     #region known type
-    #region bool
-    public static bool ParseBoolean(
-        string input,
-        bool? defaultValue = default)
-    {
-        return TryOrThrow(TryParseBoolean(input, out var value, defaultValue), input, value);
-    }
-
-    public static bool TryParseBoolean(
-        string input,
-        out bool value,
-        bool? defaultValue = null)
-    {
-        if (bool.TryParse(input, out value))
-        {
-            return true;
-        }
-
-        value = defaultValue ?? default;
-
-        return false;
-    }
-
-    public static bool? ParseNullableBoolean(
-        string input)
-    {
-        return TryOrThrow(TryParseNullableBoolean(input, out var value), input, value);
-    }
-
-    public static bool TryParseNullableBoolean(
-        string input,
-        out bool? value)
-    {
-        if (TryParseBoolean(input, out var v))
-        {
-            value = v;
-
-            return true;
-        }
-        
-        value = null;
-
-        return false;
-    }
-    #endregion
-
-    #region char
-    public static char ParseChar(
-        string input,
-        char defaultValue = default,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseChar(input, out var value, defaultValue, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseChar(
-    string input,
-    out char value,
-    char defaultValue = default,
-    TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (char.TryParse(trimmed, out value))
-        {
-            return true;
-        }
-        
-        value = defaultValue;
-
-        return false;
-    }
-
-    public static char? ParseNullableChar(
-        string input,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableChar(input, out var value, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableChar(
-        string input,
-        out char? value,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (char.TryParse(trimmed, out char parsedValue))
-        {
-            value = parsedValue;
-            return true;
-        }
-
-        value = null;
-
-        return false;
-    }
-    #endregion
-
-    #region enum
-    public static T ParseEnum<T>(string input, T defaultValue = default, TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
-    {
-        return TryOrThrow(TryParseEnum(input, out T value, defaultValue, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseEnum<T>(
-        string input,
-        out T value,
-        T defaultValue = default!,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (EnumHelper.TryParse(trimmed, true, out value!))
-        {
-            return true;
-        }
-
-        value = defaultValue;
-
-        return false;
-    }
-
-    public static T? ParseNullableEnum<T>(
-        string input,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
-    {
-        return TryOrThrow(TryParseNullableEnum(input, out T? value, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableEnum<T>(
-        string input,
-        out T? value,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            value = null;
-
-            return true;
-        }
-
-        if (EnumHelper.TryParse(trimmed, true, out value))
-        {
-            return true;
-        }
-
-        value = null;
-
-        return false;
-    }
-
-    public static object ParseEnum(
-        Type enumType,
-        string input,
-        object defaultValue,
-        TrimmingOptions trimmingOptions)
-    {
-        return TryOrThrow(TryParseEnum(enumType, input, out var value, defaultValue, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseEnum(
-        Type enumType,
-        string input,
-        out object value,
-        object defaultValue,
-        TrimmingOptions trimmingOptions)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            value = defaultValue;
-
-            return false;
-        }
-
-        return EnumHelper.TryParse(enumType, trimmed, true, out value!);
-    }
-    #endregion
 
     #region guid
     public static Guid ParseGuid(
@@ -1272,6 +1090,8 @@ public static class ValueConverter
     }
     #endregion
 
+    // here
+
     #region int
     public static int ParseInt(
         string input,
@@ -1616,6 +1436,189 @@ public static class ValueConverter
             return true;
         }
         
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region bool
+    public static bool ParseBoolean(
+        string input,
+        bool? defaultValue = default)
+    {
+        return TryOrThrow(TryParseBoolean(input, out var value, defaultValue), input, value);
+    }
+
+    public static bool TryParseBoolean(
+        string input,
+        out bool value,
+        bool? defaultValue = null)
+    {
+        if (bool.TryParse(input, out value))
+        {
+            return true;
+        }
+
+        value = defaultValue ?? default;
+
+        return false;
+    }
+
+    public static bool? ParseNullableBoolean(
+        string input)
+    {
+        return TryOrThrow(TryParseNullableBoolean(input, out var value), input, value);
+    }
+
+    public static bool TryParseNullableBoolean(
+        string input,
+        out bool? value)
+    {
+        if (TryParseBoolean(input, out var v))
+        {
+            value = v;
+
+            return true;
+        }
+        
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region char
+    public static char ParseChar(
+        string input,
+        char defaultValue = default,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        return TryOrThrow(TryParseChar(input, out var value, defaultValue, trimmingOptions), input, value);
+    }
+
+    public static bool TryParseChar(
+    string input,
+    out char value,
+    char defaultValue = default,
+    TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        var trimmed = Trim(input, trimmingOptions);
+
+        if (char.TryParse(trimmed, out value))
+        {
+            return true;
+        }
+        
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static char? ParseNullableChar(
+        string input,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        return TryOrThrow(TryParseNullableChar(input, out var value, trimmingOptions), input, value);
+    }
+
+    public static bool TryParseNullableChar(
+        string input,
+        out char? value,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        var trimmed = Trim(input, trimmingOptions);
+
+        if (char.TryParse(trimmed, out char parsedValue))
+        {
+            value = parsedValue;
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region enum
+    public static T ParseEnum<T>(string input, T defaultValue = default, TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
+    {
+        return TryOrThrow(TryParseEnum(input, out T value, defaultValue, trimmingOptions), input, value);
+    }
+
+    public static bool TryParseEnum<T>(
+        string input,
+        out T value,
+        T defaultValue = default!,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        var trimmed = Trim(input, trimmingOptions);
+
+        if (EnumHelper.TryParse(trimmed, true, out value!))
+        {
+            return true;
+        }
+
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static object ParseEnum(
+        Type enumType,
+        string input,
+        object defaultValue,
+        TrimmingOptions trimmingOptions)
+    {
+        return TryOrThrow(TryParseEnum(enumType, input, out var value, defaultValue, trimmingOptions), input, value);
+    }
+
+    public static bool TryParseEnum(
+        Type enumType,
+        string input,
+        out object value,
+        object defaultValue,
+        TrimmingOptions trimmingOptions)
+    {
+        var trimmed = Trim(input, trimmingOptions);
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            value = defaultValue;
+
+            return false;
+        }
+
+        return EnumHelper.TryParse(enumType, trimmed, true, out value!);
+    }
+
+    public static T? ParseNullableEnum<T>(
+        string input,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
+    {
+        return TryOrThrow(TryParseNullableEnum(input, out T? value, trimmingOptions), input, value);
+    }
+
+    public static bool TryParseNullableEnum<T>(
+        string input,
+        out T? value,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
+    {
+        var trimmed = Trim(input, trimmingOptions);
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            value = null;
+
+            return false;
+        }
+
+        if (EnumHelper.TryParse(trimmed, true, out value))
+        {
+            return true;
+        }
+
         value = null;
 
         return false;

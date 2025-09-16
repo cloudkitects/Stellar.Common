@@ -123,8 +123,35 @@ public partial class ValueConverterTests
         { "TRUth",  true, false,  true }
     };
 
-    public static TheoryData<string, char?, bool, char> CharData => new()
+    public static TheoryData<string, char?, TrimmingOptions, bool, char> CharData => new()
     {
-        { " t ",  null,  true,  't' },
+        { " t ",  null, TrimmingOptions.Both,  true,  't' },
+        { " t ",  null, TrimmingOptions.None, false,  default }
+    };
+
+    public enum Enum1
+    {
+        Zero,
+        One,
+        Two
+    };
+
+    [Flags]
+    public enum FlagsEnum1
+    {
+        Zero,
+        One,
+        Two,
+        Three = One | Two
+    };
+
+    public static TheoryData<string, Enum1?, TrimmingOptions?, bool, Enum1?> Enum1Data => new()
+    {
+        { "   Zero   ",      null,                 null,    true, Enum1.Zero },
+        { "    ONE   ",      null,  TrimmingOptions.Both,   true, Enum1.One  },
+        { "   Zero   ", Enum1.Two,                 null,    true, Enum1.Zero },
+        { "   Zero   ", Enum1.Two,  TrimmingOptions.None,  false, Enum1.Two  },
+        { "   two"    , Enum1.Zero, TrimmingOptions.Start,  true, Enum1.Two  },
+        { "          ", Enum1.Two,  TrimmingOptions.Both,  false, Enum1.Two  },
     };
 }
