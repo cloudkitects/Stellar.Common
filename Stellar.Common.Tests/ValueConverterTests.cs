@@ -1036,11 +1036,7 @@ public partial class ValueConverterTests
     {
         ParseTestArguments(defaultValue, null, out var index, out var defValue, out var culture);
 
-        Func<bool> action = index switch
-        {
-            1 => () => ValueConverter.ParseBoolean(input, defValue),
-            _ => () => ValueConverter.ParseBoolean(input),
-        };
+        bool action() => ValueConverter.ParseBoolean(input);
 
         if (!expectedResult)
         {
@@ -1103,11 +1099,7 @@ public partial class ValueConverterTests
             ? 1
             : 0;
 
-        Func<char> action = index switch
-        {
-            1 => () => ValueConverter.ParseChar(input, defaultValue!.Value, trimmingOptions),
-            _ => () => ValueConverter.ParseChar(input, trimmingOptions: trimmingOptions),
-        };
+        char action() => ValueConverter.ParseChar(input, trimmingOptions: trimmingOptions);
 
         if (!expectedResult)
         {
@@ -1269,4 +1261,171 @@ public partial class ValueConverterTests
         }
     }
     #endregion
+
+    #region Guid
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void TriesToParseGuid(string input, Guid? defaultValue, bool expectedResult, Guid? expected)
+    {
+        Guid value = default;
+
+        var index = (defaultValue is not null ? 1 : 0);
+        var defValue = defaultValue ?? default;
+
+        Func<bool> action = index switch
+        {
+            1 => () => ValueConverter.TryParseGuid(input, out value, defValue),
+            _ => () => ValueConverter.TryParseGuid(input, out value)
+        };
+
+        Assert.Equal(expectedResult, action());
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void ParsesGuidOrThrows(string input, Guid? defaultValue, bool expectedResult, Guid? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0);
+        var defValue = defaultValue ?? default;
+
+        Guid action() => ValueConverter.ParseGuid(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void TriesToParseNullableGuid(string input, Guid? _, bool expectedResult, Guid? expected)
+    {
+        Assert.Equal(expectedResult, ValueConverter.TryParseNullableGuid(input, out Guid? value));
+        
+        if (!expectedResult)
+        {
+            Assert.Null(value);
+        }
+        else
+        {
+            Assert.Equal(expected, value);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void ParsesNullableGuidOrThrows(string input, Guid? _, bool expectedResult, Guid? expected)
+    {
+        Guid? action() => ValueConverter.ParseNullableGuid(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region date
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void TriesToParseDate(string input, DateOnly? defaultValue, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        DateOnly value = default;
+
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<bool> action = index switch
+        {
+            3 => () => ValueConverter.TryParseDate(input, out value, defValue!.Value, culture),
+            2 => () => ValueConverter.TryParseDate(input, out value, culture: culture),
+            1 => () => ValueConverter.TryParseDate(input, out value, defValue!.Value),
+            _ => () => ValueConverter.TryParseDate(input, out value),
+        };
+
+        Assert.Equal(expectedResult, action());
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void ParsesDateOnlyOrThrows(string input, DateOnly? defaultValue, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<DateOnly> action = index switch
+        {
+            3 => () => ValueConverter.ParseDate(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseDate(input, culture: culture),
+            1 => () => ValueConverter.ParseDate(input, defValue!.Value),
+            _ => () => ValueConverter.ParseDate(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void TriesToParseNullableDateOnly(string input, DateOnly? _, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        DateOnly? value = null;
+
+        ParseTestArguments((DateOnly?)null, codePage, out var index, out var _, out var culture);
+
+        Func<bool> action = index switch
+        {
+            2 => () => ValueConverter.TryParseNullableDate(input, out value, culture),
+            _ => () => ValueConverter.TryParseNullableDate(input, out value),
+        };
+
+        Assert.Equal(expectedResult, action());
+        
+        if (!expectedResult)
+        {
+            Assert.Null(value);
+        }
+        else
+        {
+            Assert.Equal(expected, value);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void ParsesNullableDateOnlyOrThrows(string input, DateOnly? _, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        ParseTestArguments((DateOnly?)null, codePage, out var index, out var _, out var culture);
+
+        Func<DateOnly?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDate(input, culture),
+            _ => () => ValueConverter.ParseNullableDate(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
 }

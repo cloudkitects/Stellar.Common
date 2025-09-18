@@ -15,7 +15,7 @@ public static class ValueConverter
     public static NumberStyles IntegerNumberStyles { get; set; } = NumberStyles.Integer | NumberStyles.AllowThousands;
     public static NumberStyles FloatingPointNumberStyles { get; set; } = NumberStyles.Float | NumberStyles.AllowThousands;
     public static NumberStyles DecimalNumberStyles { get; set; } = FloatingPointNumberStyles | NumberStyles.AllowParentheses | NumberStyles.AllowCurrencySymbol;
-    public static DateTimeStyles DateTimeStyles { get; set; } = DateTimeStyles.None;
+    public static DateTimeStyles DateTimeStyles { get; set; } = DateTimeStyles.AllowWhiteSpaces;
     public static TimeSpanStyles TimeStyles { get; set; } = TimeSpanStyles.None;
     #endregion
 
@@ -274,13 +274,13 @@ public static class ValueConverter
         // types without a type code
         if (type == typeof(Guid))
         {
-            r = TryParseGuid(input, out var output, (Guid)defaultValue, trimmingOptions);
+            r = TryParseGuid(input, out var output, (Guid)defaultValue);
             value = output;
             return r;
         }
         else if (type == typeof(DateOnly))
         {
-            r = TryParseDate(input, out var output, (DateOnly)defaultValue, culture, trimmingOptions);
+            r = TryParseDate(input, out var output, (DateOnly)defaultValue, culture);
             value = output;
             return r;
         }
@@ -416,127 +416,6 @@ public static class ValueConverter
     #endregion
 
     #region known type
-
-    #region guid
-    public static Guid ParseGuid(
-        string input,
-        Guid defaultValue,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseGuid(input, out var value, defaultValue, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseGuid(
-        string input,
-        out Guid value,
-        Guid? defaultValue,
-        TrimmingOptions trimmingOptions)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            value = defaultValue ?? Guid.Empty;
-
-            return false;
-        }
-
-        return Guid.TryParse(trimmed, out value);
-
-    }
-
-    public static Guid? ParseNullableGuid(string input, TrimmingOptions trimmingOptions)
-    {
-        return TryOrThrow(TryParseNullableGuid(input, out var value, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableGuid(
-        string input,
-        out Guid? value,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = null;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        if (Guid.TryParse(trimmed, out Guid guidValue))
-        {
-            value = guidValue;
-
-            return true;
-        }
-
-        return false;
-    }
-    #endregion
-
-    #region dateonly
-    public static DateOnly ParseDate(
-        string input,
-        DateOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseDate(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseDate(
-        string input,
-        out DateOnly value,
-        DateOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            value = defaultValue ?? DateOnly.MinValue;
-
-            return false;
-        }
-
-        return DateOnly.TryParseExact(trimmed, datetimeFormats, culture, DateTimeStyles, out value) ||
-            DateOnly.TryParseExact(trimmed, "G", culture, DateTimeStyles, out value) ||
-            DateOnly.TryParse(trimmed, culture, DateTimeStyles, out value);
-    }
-
-    public static DateOnly? ParseNullableDate(
-        string input,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableDate(input, out var value, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableDate(
-        string input,
-        out DateOnly? value,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (!string.IsNullOrEmpty(trimmed) &&
-            TryParseDate(input, out var dtValue, null, culture, trimmingOptions))
-        {
-            value = dtValue;
-
-            return true;
-        }
-
-        value = null;
-
-        return false;
-    }
-    #endregion
 
     #region datetime
     public static DateTime ParseDateTime(
@@ -690,7 +569,7 @@ public static class ValueConverter
     {
         value = defaultValue ?? TimeSpan.MinValue;
         culture ??= CultureInfo.InvariantCulture;
-        
+
         var trimmed = Trim(input, trimmingOptions);
 
         if (string.IsNullOrEmpty(trimmed))
@@ -794,7 +673,7 @@ public static class ValueConverter
     {
         value = defaultValue ?? TimeOnly.MinValue;
         culture ??= CultureInfo.InvariantCulture;
-        
+
         var trimmed = Trim(input, trimmingOptions);
 
         if (string.IsNullOrEmpty(trimmed))
@@ -805,7 +684,7 @@ public static class ValueConverter
         if (TimeOnly.TryParse(trimmed, culture, out var parsedValue))
         {
             value = parsedValue;
-            
+
             return true;
         }
 
@@ -1135,7 +1014,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1185,7 +1064,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1235,7 +1114,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1285,7 +1164,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1335,7 +1214,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1385,7 +1264,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1435,7 +1314,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1481,7 +1360,7 @@ public static class ValueConverter
 
             return true;
         }
-        
+
         value = null;
 
         return false;
@@ -1509,7 +1388,7 @@ public static class ValueConverter
         {
             return true;
         }
-        
+
         value = defaultValue;
 
         return false;
@@ -1542,7 +1421,10 @@ public static class ValueConverter
     #endregion
 
     #region enum
-    public static T ParseEnum<T>(string input, T defaultValue = default, TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
+    public static T ParseEnum<T>(
+        string input,
+        T defaultValue = default,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
     {
         return TryOrThrow(TryParseEnum(input, out T value, defaultValue, trimmingOptions), input, value);
     }
@@ -1553,9 +1435,7 @@ public static class ValueConverter
         T defaultValue = default!,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (EnumHelper.TryParse(trimmed, true, out value!))
+        if (EnumHelper.TryParse(Trim(input, trimmingOptions), true, out value!))
         {
             return true;
         }
@@ -1581,16 +1461,14 @@ public static class ValueConverter
         object defaultValue,
         TrimmingOptions trimmingOptions)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (EnumHelper.TryParse(enumType, Trim(input, trimmingOptions), true, out value!))
         {
-            value = defaultValue;
-
-            return false;
+            return true;
         }
 
-        return EnumHelper.TryParse(enumType, trimmed, true, out value!);
+        value = defaultValue;
+
+        return false;
     }
 
     public static T? ParseNullableEnum<T>(
@@ -1605,17 +1483,101 @@ public static class ValueConverter
         out T? value,
         TrimmingOptions trimmingOptions = TrimmingOptions.Both) where T : struct
     {
-        var trimmed = Trim(input, trimmingOptions);
+        return EnumHelper.TryParse(Trim(input, trimmingOptions), true, out value);
+    }
+    #endregion
 
-        if (string.IsNullOrEmpty(trimmed))
+    #region guid
+    public static Guid ParseGuid(
+        string input,
+        Guid defaultValue = default)
+    {
+        return TryOrThrow(TryParseGuid(input, out var value, defaultValue), input, value);
+    }
+
+    public static bool TryParseGuid(
+        string input,
+        out Guid value,
+        Guid defaultValue = default)
+    {
+        if (Guid.TryParse(input, out value))
         {
-            value = null;
-
-            return false;
+            return true;
         }
 
-        if (EnumHelper.TryParse(trimmed, true, out value))
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static Guid? ParseNullableGuid(
+        string input)
+    {
+        return TryOrThrow(TryParseNullableGuid(input, out var value), input, value);
+    }
+
+    public static bool TryParseNullableGuid(
+        string input,
+        out Guid? value)
+    {
+        if (Guid.TryParse(input, out Guid guidValue))
         {
+            value = guidValue;
+
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region dateonly
+    public static DateOnly ParseDate(
+        string input,
+        DateOnly defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseDate(input, out var value, defaultValue, culture), input, value);
+    }
+
+    public static bool TryParseDate(
+        string input,
+        out DateOnly value,
+        DateOnly defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (DateOnly.TryParseExact(input, datetimeFormats, culture, DateTimeStyles, out value) ||
+            DateOnly.TryParseExact(input, "G", culture, DateTimeStyles, out value) ||
+            DateOnly.TryParse(input, culture, DateTimeStyles, out value))
+        {
+            return true;
+        }
+
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static DateOnly? ParseNullableDate(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableDate(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableDate(
+        string input,
+        out DateOnly? value,
+        IFormatProvider? culture = null)
+    {
+        if (TryParseDate(input, out var parsedValue, default, culture))
+        {
+            value = parsedValue;
+
             return true;
         }
 

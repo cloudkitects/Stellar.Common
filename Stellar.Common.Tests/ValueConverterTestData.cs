@@ -129,15 +129,8 @@ public partial class ValueConverterTests
         { " t ",  null, TrimmingOptions.None, false,  default }
     };
 
-    public enum Enum1
-    {
-        Zero,
-        One,
-        Two
-    };
-
     [Flags]
-    public enum FlagsEnum1
+    public enum Enum1
     {
         Zero,
         One,
@@ -147,11 +140,38 @@ public partial class ValueConverterTests
 
     public static TheoryData<string, Enum1?, TrimmingOptions?, bool, Enum1?> Enum1Data => new()
     {
-        { "   Zero   ",      null,                 null,    true, Enum1.Zero },
-        { "    ONE   ",      null,  TrimmingOptions.Both,   true, Enum1.One  },
-        { "   Zero   ", Enum1.Two,                 null,    true, Enum1.Zero },
-        { "   Zero   ", Enum1.Two,  TrimmingOptions.None,  false, Enum1.Two  },
-        { "   two"    , Enum1.Zero, TrimmingOptions.Start,  true, Enum1.Two  },
-        { "          ", Enum1.Two,  TrimmingOptions.Both,  false, Enum1.Two  },
+        { "   Zero   ",      null,  null,                  true,  Enum1.Zero  },
+        { "    ONE   ",      null,  TrimmingOptions.Both,  true,  Enum1.One   },
+        { "   Zero   ", Enum1.Two,  null,                  true,  Enum1.Zero  },
+        { "   Zero   ", Enum1.Two,  TrimmingOptions.None,  false, Enum1.Two   },
+        { "   two"    , Enum1.Zero, TrimmingOptions.Start,  true, Enum1.Two   },
+        { "          ", Enum1.Two,  TrimmingOptions.Both,  false, Enum1.Two   },
+        { "2         ", Enum1.Zero, TrimmingOptions.End,    true, Enum1.Two   },
+        { "   3      ", Enum1.Zero, TrimmingOptions.Both,   true, Enum1.Three }
+    };
+
+    public static TheoryData<string, Guid?, bool, Guid?> GuidData => new()
+    {
+        { "   6f98ec4e-bf41-41d9-8220-12440d6158c7   ", null,                                              true, new Guid("6f98ec4e-bf41-41d9-8220-12440d6158c7") },
+        { "   306a8d0f-a46c-479d-989f-a27544284e3d   ", null,                                              true, new Guid("306a8d0f-a46c-479d-989f-a27544284e3d") },
+        { "   ff8fb86a-03c6-4aca-9a3e-9036e674079e",    new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),  true, new Guid("ff8fb86a-03c6-4aca-9a3e-9036e674079e") },
+        { "   ff8fb86a-03c6-4aca-9a3e-9036e674079e",    new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),  true, new Guid("ff8fb86a-03c6-4aca-9a3e-9036e674079e") },
+        { "                                          ", new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"), false, new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff") },
+        { "                                          ", default,                                          false, Guid.Empty },
+        { "x                                         ", new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"), false, new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff") }
+    };
+
+    public static TheoryData<string, DateOnly?, string?, bool, DateOnly?> DateData => new()
+    {
+        { "  2023-10-05  ", null,                   null,    true,  new DateOnly(2023, 10, 5) },
+        { "05/10/2023",     null,                   "fr-FR", true,  new DateOnly(2023, 10, 5) },
+        { "10/05/2023",     null,                   "en-US", true,  new DateOnly(2023, 10, 5) },
+        { "2023-10-05",     null,                   null,    true,  new DateOnly(2023, 10, 5) },
+        { "2023.10.05",     null,                   "de-DE", true,  new DateOnly(2023, 10, 5) },
+        { "2023/10/05",     null,                   "ja-JP", true,  new DateOnly(2023, 10, 5) },
+        { "          ",     null,                   null,    false, default(DateOnly) },
+        { "          ",     new DateOnly(2022,1,1), null,    false, new DateOnly(2022,1,1) },
+        { null!,            null,                   null,    false, default(DateOnly) },
+        { "  20250916",     null,                   null,    true,  new DateOnly(2025, 9, 16) }
     };
 }
