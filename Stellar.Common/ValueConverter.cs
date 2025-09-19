@@ -19,7 +19,7 @@ public static class ValueConverter
     public static TimeSpanStyles TimeStyles { get; set; } = TimeSpanStyles.None;
     #endregion
 
-    #region datetime formats
+    #region formats
     private static string[] datetimeFormats =
     [
         // JavaScript
@@ -32,6 +32,12 @@ public static class ValueConverter
         "yyyyMMddHHmmss",
         "yyyyMMddHHmm",
         "yyyyMMdd"
+    ];
+
+    private static string[] timeFormats =
+    [
+        "HHmmss",
+        "HHmm"
     ];
 
     public static string[] GetDateTimeFormats()
@@ -52,14 +58,6 @@ public static class ValueConverter
 
         Interlocked.Exchange(ref datetimeFormats, [.. list.Distinct()]);
     }
-    #endregion
-
-    #region time formats
-    private static string[] timeFormats =
-    [
-        "HHmmss",
-        "HHmm"
-    ];
 
     public static string[] GetTimeFormats()
     {
@@ -286,19 +284,19 @@ public static class ValueConverter
         }
         else if (type == typeof(TimeOnly))
         {
-            r = TryParseTime(input, out var output, (TimeOnly)defaultValue, culture, trimmingOptions);
+            r = TryParseTime(input, out var output, (TimeOnly)defaultValue, culture);
             value = output;
             return r;
         }
         else if (type == typeof(DateTimeOffset))
         {
-            r = TryParseDateTimeOffset(input, out var output, (DateTimeOffset)defaultValue, culture, trimmingOptions);
+            r = TryParseDateTimeOffset(input, out var output, (DateTimeOffset)defaultValue, culture);
             value = output;
             return r;
         }
         else if (type == typeof(TimeSpan))
         {
-            r = TryParseTimeSpan(input, out var output, (TimeSpan)defaultValue, culture, trimmingOptions);
+            r = TryParseTimeSpan(input, out var output, (TimeSpan)defaultValue, culture);
             value = output;
             return r;
         }
@@ -338,7 +336,7 @@ public static class ValueConverter
 
             case TypeCode.DateTime:
                 {
-                    r = TryParseDateTime(input, out var output, (DateTime)defaultValue, culture, trimmingOptions);
+                    r = TryParseDateTime(input, out var output, (DateTime)defaultValue, culture);
                     value = output;
                     break;
                 }
@@ -359,28 +357,28 @@ public static class ValueConverter
 
             case TypeCode.Int16:
                 {
-                    r = TryParseShort(input, out var output, (short)defaultValue, culture, trimmingOptions);
+                    r = TryParseShort(input, out var output, (short)defaultValue, culture);
                     value = output;
                     break;
                 }
 
             case TypeCode.Byte:
                 {
-                    r = TryParseByte(input, out var output, (byte)defaultValue, culture, trimmingOptions);
+                    r = TryParseByte(input, out var output, (byte)defaultValue, culture);
                     value = output;
                     break;
                 }
 
             case TypeCode.SByte:
                 {
-                    r = TryParseSByte(input, out var output, (sbyte)defaultValue, culture, trimmingOptions);
+                    r = TryParseSByte(input, out var output, (sbyte)defaultValue, culture);
                     value = output;
                     break;
                 }
 
             case TypeCode.UInt16:
                 {
-                    r = TryParseUShort(input, out var output, (ushort)defaultValue, culture, trimmingOptions);
+                    r = TryParseUnsignedShort(input, out var output, (ushort)defaultValue, culture);
                     value = output;
                     break;
                 }
@@ -416,344 +414,51 @@ public static class ValueConverter
     #endregion
 
     #region known type
-
-    #region datetime
-    public static DateTime ParseDateTime(
-        string input,
-        DateTime? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseDateTime(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseDateTime(
-        string input,
-        out DateTime value,
-        DateTime? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? DateTime.MinValue;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        return
-            DateTime.TryParseExact(trimmed, datetimeFormats, culture, DateTimeStyles, out value) ||
-            DateTime.TryParseExact(trimmed, "G", culture, DateTimeStyles, out value) ||
-            DateTime.TryParse(trimmed, culture, DateTimeStyles, out value);
-    }
-
-    public static DateTime? ParseNullableDateTime(
-        string input,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableDateTime(input, out var value, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableDateTime(
-        string input,
-        out DateTime? value,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        if (TryParseDateTime(input, out var dtValue, null, culture, trimmingOptions))
-        {
-            value = dtValue;
-
-            return true;
-        }
-
-        return false;
-    }
-    #endregion
-
-    #region datetime offset
-    public static DateTimeOffset ParseDateTimeOffset(
-        string input,
-        DateTimeOffset? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseDateTimeOffset(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseDateTimeOffset(
-        string input,
-        out DateTimeOffset value,
-        DateTimeOffset? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? DateTimeOffset.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        return
-            DateTimeOffset.TryParseExact(trimmed, datetimeFormats, culture, DateTimeStyles, out value) ||
-            DateTimeOffset.TryParseExact(trimmed, "G", culture, DateTimeStyles, out value) ||
-            DateTimeOffset.TryParse(trimmed, culture, DateTimeStyles, out value);
-    }
-
-    public static DateTimeOffset? ParseNullableDateTimeOffset(
-        string input,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableDateTimeOffset(input, out var value, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableDateTimeOffset(
-        string input,
-        out DateTimeOffset? value,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        if (TryParseDateTimeOffset(trimmed, out var parsedValue, null, culture, trimmingOptions))
-        {
-            value = parsedValue;
-
-            return true;
-        }
-
-        return false;
-    }
-    #endregion
-
-    #region timespan
-    public static TimeSpan ParseTimeSpan(
-        string input,
-        TimeSpan? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseTimeSpan(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseTimeSpan(
-        string input,
-        out TimeSpan value,
-        TimeSpan? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? TimeSpan.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        return
-            TimeSpan.TryParseExact(trimmed, timeFormats, culture, TimeStyles, out value) ||
-            TimeSpan.TryParseExact(trimmed, "G", culture, TimeStyles, out value) ||
-            TimeSpan.TryParse(trimmed, culture, out value);
-    }
-
-
-    public static TimeSpan? ParseNullableTimeSpan(
-        string input,
-        TimeSpan? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableTimeSpan(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableTimeSpan(
-        string input,
-        out TimeSpan? value,
-        TimeSpan? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? TimeSpan.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        if (TimeSpan.TryParse(trimmed, culture, out var parsedValue))
-        {
-            value = parsedValue;
-
-            return true;
-        }
-
-        return false;
-    }
-    #endregion
-
-    #region timeonly
-    public static TimeOnly ParseTime(
-        string input,
-        TimeOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseTime(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseTime(
-        string input,
-        out TimeOnly value,
-        TimeOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? TimeOnly.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        return
-            TimeOnly.TryParseExact(trimmed, timeFormats, culture, DateTimeStyles, out value) ||
-            TimeOnly.TryParseExact(trimmed, "G", culture, DateTimeStyles, out value) ||
-            TimeOnly.TryParse(trimmed, culture, out value);
-    }
-
-
-    public static TimeOnly? ParseNullableTime(
-        string input,
-        TimeOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableTime(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableTime(
-        string input,
-        out TimeOnly? value,
-        TimeOnly? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = defaultValue ?? TimeOnly.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            return false;
-        }
-
-        if (TimeOnly.TryParse(trimmed, culture, out var parsedValue))
-        {
-            value = parsedValue;
-
-            return true;
-        }
-
-        return false;
-    }
-    #endregion
-
     #region sbyte
     public static sbyte ParseSByte(
         string input,
-        sbyte? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        sbyte defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseSByte(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseSByte(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseSByte(
         string input,
         out sbyte value,
-        sbyte? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        sbyte defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        value = defaultValue ?? sbyte.MinValue;
-        culture ??= CultureInfo.InvariantCulture;
-
-        var trimmed = Trim(input, trimmingOptions);
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (sbyte.TryParse(input, IntegerNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            return false;
+            return true;
         }
 
-        return sbyte.TryParse(trimmed, IntegerNumberStyles, culture, out value);
+        value = defaultValue;
+
+        return false;
     }
 
     public static sbyte? ParseNullableSByte(
         string input,
-        sbyte? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableSByte(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableSByte(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableSByte(
         string input,
         out sbyte? value,
-        sbyte? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseSByte(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
-            value = defaultValue ?? sbyte.MinValue;
+            value = parsedValue;
+            
             return true;
         }
 
-        if (sbyte.TryParse(trimmed, IntegerNumberStyles, culture, out var parsedValue))
-        {
-            value = parsedValue;
-            return false;
-        }
+        value = null;
 
         return false;
     }
@@ -762,214 +467,158 @@ public static class ValueConverter
     #region byte
     public static byte ParseByte(
         string input,
-        byte? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        byte defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseByte(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseByte(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseByte(
         string input,
         out byte value,
-        byte? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        byte defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
         culture ??= CultureInfo.InvariantCulture;
 
-        if (string.IsNullOrEmpty(trimmed))
+        if (byte.TryParse(input, IntegerNumberStyles, culture, out value))
         {
-            value = defaultValue ?? byte.MinValue;
-        }
-        else if (!byte.TryParse(trimmed, IntegerNumberStyles, culture, out value))
-        {
-            return false;
+            return true;
         }
 
-        return true;
+        value = defaultValue;
+        
+        return false;
     }
 
     public static byte? ParseNullableByte(
         string input,
-        byte? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableByte(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableByte(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableByte(
         string input,
         out byte? value,
-        byte? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
         culture ??= CultureInfo.InvariantCulture;
 
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseByte(input, out var parsedValue, default, culture))
         {
-            value = defaultValue ?? byte.MinValue;
+            value = parsedValue;
+            
             return true;
         }
 
-        if (byte.TryParse(trimmed, IntegerNumberStyles, culture, out var parsedValue))
-        {
-            value = parsedValue;
-            return false;
-        }
+        value = null;
 
         return false;
     }
     #endregion
 
-    #region short (int16)
+    #region short
     public static short ParseShort(
         string input,
-        short? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        short defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseShort(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseShort(input, out var value, defaultValue, culture), input, value);
     }
 
     public static bool TryParseShort(
         string input,
         out short value,
-        short? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        short defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (short.TryParse(input, IntegerNumberStyles, culture ?? CultureInfo.InvariantCulture, out value))
         {
-            value = defaultValue ?? short.MinValue;
-        }
-        else if (!short.TryParse(trimmed, IntegerNumberStyles, culture, out value))
-        {
-            return false;
+            return true;
         }
 
-        return true;
+        value = defaultValue;
+
+        return false;
     }
 
     public static short? ParseNullableShort(
         string input,
-        short? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseNullableShort(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseNullableShort(input, out var value, culture), input, value);
     }
 
     public static bool TryParseNullableShort(
         string input,
         out short? value,
-        short? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        IFormatProvider? culture = null)
     {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
+        if (TryParseShort(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
-            value = defaultValue ?? short.MinValue;
+            value = parsedValue;
+            
             return true;
         }
 
-        if (short.TryParse(trimmed, IntegerNumberStyles, culture, out var parsedValue))
-        {
-            value = parsedValue;
-            return false;
-        }
+        value = null;
 
         return false;
     }
     #endregion
 
     #region ushort
-    public static ushort ParseUShort(
+    public static ushort ParseUnsignedShort(
         string input,
-        ushort? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        ushort defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        return TryOrThrow(TryParseUShort(input, out var value, defaultValue, culture, trimmingOptions), input, value);
+        return TryOrThrow(TryParseUnsignedShort(input, out var value, defaultValue, culture), input, value);
     }
 
-    public static bool TryParseUShort(
+    public static bool TryParseUnsignedShort(
         string input,
         out ushort value,
-        ushort? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+        ushort defaultValue = default,
+        IFormatProvider? culture = null)
     {
-        var trimmed = Trim(input, trimmingOptions);
-
         culture ??= CultureInfo.InvariantCulture;
 
-        if (string.IsNullOrEmpty(trimmed))
+        if (ushort.TryParse(input, IntegerNumberStyles, culture, out value))
         {
-            value = defaultValue ?? ushort.MinValue;
-        }
-        else if (!ushort.TryParse(trimmed, IntegerNumberStyles, culture, out value))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static ushort? ParseNullableUShort(
-        string input,
-        ushort? defaultValue,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        return TryOrThrow(TryParseNullableUShort(input, out var value, defaultValue, culture, trimmingOptions), input, value);
-    }
-
-    public static bool TryParseNullableUShort(
-        string input,
-        out ushort? value,
-        ushort? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        value = null;
-        var trimmed = Trim(input, trimmingOptions);
-
-        culture ??= CultureInfo.InvariantCulture;
-
-        if (string.IsNullOrEmpty(trimmed))
-        {
-            value = defaultValue ?? ushort.MinValue;
             return true;
         }
 
-        if (ushort.TryParse(trimmed, IntegerNumberStyles, culture, out var parsedValue))
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static ushort? ParseNullableUnsignedShort(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableUnsignedShort(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableUnsignedShort(
+        string input,
+        out ushort? value,
+        IFormatProvider? culture = null)
+    {
+        if (TryParseUnsignedShort(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
             value = parsedValue;
-            return false;
+            
+            return true;
         }
+
+        value = null;
 
         return false;
     }
     #endregion
-
-    // here
 
     #region int
     public static int ParseInt(
@@ -1533,7 +1182,7 @@ public static class ValueConverter
     }
     #endregion
 
-    #region dateonly
+    #region date
     public static DateOnly ParseDate(
         string input,
         DateOnly defaultValue = default,
@@ -1575,6 +1224,226 @@ public static class ValueConverter
         IFormatProvider? culture = null)
     {
         if (TryParseDate(input, out var parsedValue, default, culture))
+        {
+            value = parsedValue;
+
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region time
+    public static TimeOnly ParseTime(
+        string input,
+        TimeOnly defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseTime(input, out var value, defaultValue, culture), input, value);
+    }
+
+    public static bool TryParseTime(
+        string input,
+        out TimeOnly value,
+        TimeOnly defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (TimeOnly.TryParseExact(input, timeFormats, culture, DateTimeStyles, out value) ||
+            TimeOnly.TryParseExact(input, "G", culture, DateTimeStyles, out value) ||
+            TimeOnly.TryParse(input, culture, out value))
+        {
+            return true;
+        }
+
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static TimeOnly? ParseNullableTime(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableTime(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableTime(
+        string input,
+        out TimeOnly? value,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (TryParseTime(input, out var parsedValue, culture: culture))
+        {
+            value = parsedValue;
+
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region datetime
+    public static DateTime ParseDateTime(
+        string input,
+        DateTime defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseDateTime(input, out var value, defaultValue, culture), input, value);
+    }
+
+    public static bool TryParseDateTime(
+        string input,
+        out DateTime value,
+        DateTime defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (DateTime.TryParseExact(input, datetimeFormats, culture, DateTimeStyles, out value) ||
+            DateTime.TryParseExact(input, "G", culture, DateTimeStyles, out value) ||
+            DateTime.TryParse(input, culture, DateTimeStyles, out value))
+        {
+            return true;
+        }
+
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static DateTime? ParseNullableDateTime(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableDateTime(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableDateTime(
+        string input,
+        out DateTime? value,
+        IFormatProvider? culture = null)
+    {
+        if (TryParseDateTime(input, out var dtValue, default, culture))
+        {
+            value = dtValue;
+
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region datetime offset
+    public static DateTimeOffset ParseDateTimeOffset(
+        string input,
+        DateTimeOffset defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseDateTimeOffset(input, out var value, defaultValue, culture), input, value);
+    }
+
+    public static bool TryParseDateTimeOffset(
+        string input,
+        out DateTimeOffset value,
+        DateTimeOffset defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (DateTimeOffset.TryParseExact(input, datetimeFormats, culture, DateTimeStyles, out value) ||
+            DateTimeOffset.TryParseExact(input, "G", culture, DateTimeStyles, out value) ||
+            DateTimeOffset.TryParse(input, culture, DateTimeStyles, out value))
+        {
+            return true;
+        }
+        
+        value = defaultValue;
+        
+        return false;
+    }
+
+    public static DateTimeOffset? ParseNullableDateTimeOffset(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableDateTimeOffset(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableDateTimeOffset(
+        string input,
+        out DateTimeOffset? value,
+        IFormatProvider? culture = null)
+    {
+        if (TryParseDateTimeOffset(input, out var parsedValue, default, culture))
+        {
+            value = parsedValue;
+
+            return true;
+        }
+
+        value = null;
+
+        return false;
+    }
+    #endregion
+
+    #region timespan
+    public static TimeSpan ParseTimeSpan(
+        string input,
+        TimeSpan defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseTimeSpan(input, out var value, defaultValue, culture), input, value);
+    }
+
+    public static bool TryParseTimeSpan(
+        string input,
+        out TimeSpan value,
+        TimeSpan defaultValue = default,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (TimeSpan.TryParseExact(input, timeFormats, culture, TimeStyles, out value) ||
+            TimeSpan.TryParseExact(input, "G", culture, TimeStyles, out value) ||
+            TimeSpan.TryParse(input, culture, out value))
+        {
+            return true;
+        }
+
+        value = defaultValue;
+
+        return false;
+    }
+
+    public static TimeSpan? ParseNullableTimeSpan(
+        string input,
+        IFormatProvider? culture = null)
+    {
+        return TryOrThrow(TryParseNullableTimeSpan(input, out var value, culture), input, value);
+    }
+
+    public static bool TryParseNullableTimeSpan(
+        string input,
+        out TimeSpan? value,
+        IFormatProvider? culture = null)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (TryParseTimeSpan(input, out var parsedValue, default, culture))
         {
             value = parsedValue;
 
