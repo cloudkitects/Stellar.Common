@@ -61,15 +61,6 @@ namespace Stellar.Common.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cannot fill a buffer and keep all its elements at the same time..
-        /// </summary>
-        internal static string CannotKeepAllBufferElements {
-            get {
-                return ResourceManager.GetString("CannotKeepAllBufferElements", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The conversion of &apos;{0}&apos; to {1} failed..
         /// </summary>
         internal static string ConversionFailed {

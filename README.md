@@ -31,45 +31,6 @@ A real-world use case kicks off the next ETL hop once expected files are loaded 
 
 In essence, it is a user-defined synchronous stand-in for `Task.WhenAll()`. It is _not_ a multi-process orchestrator, as state cannot be preserved across processes.
 
-# Buffer
-
-A generic random-access buffer initialized to the given. Extirpated from Stellar.IO, it essentially supports I/O readers with a buffer fill callback and a bookmark equality comparer.
-
-```cs
-// buffer fill callback wraps Read() handling range and EOF...
-private int BufferFillCallback(char[] buffer, int offset) 
-{
-    ArgumentNullException.ThrowIfNull(buffer);
-
-    if (offset < 0 || buffer.Length <= offset)
-    {
-        throw new ArgumentOutOfRangeException(nameof(offset));
-    }
-
-    if (EOF)
-    {
-        return 0;
-    }
-
-    var count = TextReader.Read(buffer, offset, buffer.Length - offset);
-
-    EOF = count <= 0;
-
-    return count;
-}
-
-// somewhere within the reader ctor...
-buffer = new Buffer<char>(bufferSize, BufferFillCallback);
-
-// buffer supports token-based reading
-protected override ReadResult ReadCore(Buffer<char> buffer, IList<string> values)
-{
-    while (buffer.Refill() && !IsNewLine(buffer.Current))
-    {
-        ...
-    }
-```
-
 # DefaultValueDictionary
 
 Implements `IDictionary<TKey, TValue> where TKey : notnull` and returns the `TValue?` default when keys do not exist. In other words, a loosely-defined dictionary.
