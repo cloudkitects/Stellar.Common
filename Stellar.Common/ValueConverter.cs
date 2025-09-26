@@ -82,11 +82,6 @@ public static class ValueConverter
     #region helpers
     private static string Trim(string value, TrimmingOptions options)
     {
-        if (string.IsNullOrEmpty(value))
-        {
-            return value;
-        }
-
         if ((options & TrimmingOptions.Both) == TrimmingOptions.Both)
         {
             value = value.Trim();
@@ -187,27 +182,10 @@ public static class ValueConverter
     {
         var r = TryParse(input, typeof(T), out var result, defaultValue, culture, trimmingOptions);
 
-        value = (T)(result ?? defaultValue)!;
+        value = (T)result!;
 
         return r;
     }
-
-    #region type argument
-    public static object? Parse(
-        object? value,
-        Type type,
-        object? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
-    {
-        if (value is null || value == DBNull.Value)
-        {
-            return defaultValue;
-        }
-
-        return Parse($"{value}", type, defaultValue, culture, trimmingOptions);
-    }
-    #endregion
 
     public static object Parse(
         string input,
@@ -230,9 +208,8 @@ public static class ValueConverter
         ArgumentNullException.ThrowIfNull(type);
 
         input = Trim(input, trimmingOptions);
-        var empty = string.IsNullOrEmpty(input);
-
-        if (empty)
+        
+        if (string.IsNullOrEmpty(input))
         {
             value = defaultValue;
 
@@ -241,11 +218,9 @@ public static class ValueConverter
 
         if (type == typeof(string))
         {
-            value = empty
-                ? defaultValue
-                : input;
+            value = input;
 
-            return !empty;
+            return true;
         }
 
         type = Nullable.GetUnderlyingType(type) ?? type;
@@ -257,7 +232,6 @@ public static class ValueConverter
 
         // handle the null default value case (empty/null value and null default value has been already handled)
         defaultValue ??= type.GetDefaultValue();
-        culture ??= CultureInfo.InvariantCulture;
 
         Debug.Assert(defaultValue != null, $"{nameof(defaultValue)} != null");
 
@@ -267,6 +241,8 @@ public static class ValueConverter
             return TryParseEnum(type, input, out value, (Enum)defaultValue, trimmingOptions);
         }
 
+        culture ??= CultureInfo.InvariantCulture;
+        
         bool r;
 
         // types without a type code

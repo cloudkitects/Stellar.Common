@@ -1,7 +1,6 @@
-﻿using System.Text;
+﻿namespace Stellar.Common;
 
-namespace Stellar.Common;
-
+[Serializable]
 public class Bucket<TKey> where TKey : notnull
 {
     private readonly Dictionary<TKey, bool> bucket = [];

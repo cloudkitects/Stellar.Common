@@ -7,6 +7,143 @@
 /// </remarks>
 public partial class ValueConverterTests
 {
+    public static TheoryData<string> Formats =>
+    [
+        "yyyy-MM-dd",
+        "HH.mm.ss"
+    ];
+
+    public static TheoryData<string?, string, string?> StringToString => new()
+    {
+        { "", "", null },
+        { null, "", null },
+        { "dim", "       dim", "0,10" }
+    };
+
+    public static TheoryData<char?, string, string?> CharToString => new()
+    {
+        { ' ', " ", null },
+        { '\u2192', "\u2192", null },
+        { 'A', "A", null }
+    };
+
+    public static TheoryData<byte?, string, string?> ByteToString => new()
+    {
+        { 128, "80", "X2" },
+        { 255, "FF", "X2" },
+        { 192, "0192", "D4" }
+    };
+
+    public static TheoryData<sbyte?, string, string?> SignedByteToString => new()
+    {
+        { -80, "B0", "X2" },
+        { 127, "7F", "X2" },
+    };
+
+    public static TheoryData<short?, string, string?> Shorts => new()
+    {
+        { 12356, "12,356", "N0" }
+    };
+
+    public static TheoryData<uint?, string, string?> UInts => new()
+    {
+        { 256 , "100" , "X2" }
+    };
+
+    public static TheoryData<ushort?, string, string?> UShorts => new()
+    {
+        { 80 , "50" , "X2" }
+    };
+
+    public static TheoryData<float?, string, string?> SingleToString => new()
+    {
+        { 1.54321E-3f, "1.54321E-003", "E5" }
+    };
+
+    public static TheoryData<double?, string, string?, string?> Doubles => new()
+    {
+        { 1.5E-5d, "0.0000150000", "N10", null },
+        { 1.5E-5d, "1.5E-05", null, null },
+        { 123.456, "123,456", null, "de-DE" },
+        { 123.456, "123.456", null, null }
+    };
+
+    public static TheoryData<int?, string, string?, string?> IntToString => new()
+    {
+        { 123456, "123,456", "N0", null },
+        { 123456, "123.456", "N0", "de-DE" }
+    };
+
+    public static TheoryData<ulong?, string, string?, string?> ULongToString => new()
+    {
+        { 1234567890121UL, "1,234,567,890,121", "N0", null },
+        { 1234567890121UL, "1.234.567.890.121", "N0" , "de-DE"},
+        { 75849584532321U, "75,849,584,532,321", "N0", null },
+        { 75849584532321U, "75 849 584 532 321", "### ### ### ### ###", null },
+    };
+
+    public static TheoryData<long?, string, string?, string?> LongToString => new()
+    {
+        { -123456L, "-123,456", "N0", null },
+        { 123456L, "123.456", "N0", "de-DE" }
+    };
+
+    public static TheoryData<decimal?, string, string?, string?> Decimals => new()
+    {
+        { 1987.6m, "$1,987.60", "C2", "en-US" }
+    };
+    public static TheoryData<DateTimeOffset?, string, string?, string?> DateTimeOffsets => new()
+    {
+        { DateTimeOffset.FromUnixTimeSeconds(7), "00:00:07", "HH:mm:ss", null }
+    };
+
+    public static TheoryData<bool?, string, string?> BooleanToString => new()
+    {
+        { false, "False", "'Y','N'" },
+        { false, "False", null },
+        { true,  "True", "'Y','N'"},
+        { true, "True", null }
+    };
+
+    public static TheoryData<string?, string, string?> GuidToString => new()
+    {
+        { $"{Guid.Empty}", "(00000000-0000-0000-0000-000000000000)", "P" },
+        { $"{new Guid("e9cc294d-0a31-481b-bc61-f677c1392516")}", "{0xe9cc294d,0x0a31,0x481b,{0xbc,0x61,0xf6,0x77,0xc1,0x39,0x25,0x16}}", "X" },
+    };
+
+    public static TheoryData<string[], string, string?> BucketToString => new()
+    {
+        { ["a", "b"], "a:0 b:0", "JSON" },
+        { ["a", "b"], "a:0 b:0", null }
+    };
+
+    public static TheoryData<DateOnly?, string, string?> DateToString => new()
+    {
+        { new DateOnly(2025, 7, 18), "07/18/2025", null },
+        { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd" },
+    };
+
+    public static TheoryData<DateTime?, string, string?, string?> DateTimeToString => new()
+    {
+        { new DateTime(2025, 12, 31), "2025-Dec-31 00:00:00", "yyyy-MMM-dd HH:mm:ss", "en-US" },
+        { new DateTime(2025, 7, 18), "07/18/2025 00:00:00", null, null },
+        { new DateTime(2025, 7, 18), "7/18/2025 12:00:00 AM", null, "en-US" },
+        { new DateTime(2025, 7, 18, 20, 45, 32), "2025-Jul-18 20:45:32", "yyyy-MMM-dd HH:mm:ss", null }
+    };
+
+    public static TheoryData<TimeOnly?, string, string?> TimeToString => new()
+    {
+        { new TimeOnly(20, 45, 32), "08.45.32", "hh.mm.ss" },
+        { new TimeOnly(20, 45, 32), "20:45", null },
+        { null!, "", null }
+    };
+
+    public static TheoryData<TimeSpan?, string, string?, string?> TimeSpanToString => new()
+    {
+        { new TimeSpan(8, 45, 32), "08:45:32", null, "fi-FI" },
+        { new TimeSpan(8, 45, 32), "08:45:32", null, null }
+    };
+
     public static TheoryData<string, sbyte?, string?, bool, sbyte?> SignedByteData => new()
     {
         { "  127  ", null, null,  true,   127 },
@@ -32,7 +169,7 @@ public partial class ValueConverterTests
         { "     ",     42, null, false,    42 },
         { null!,     null, null, false,     0 },
         { "  +260",    42, null, false,    42 },
-        { "   -5",     42, null, false,    42  }
+        { "   -5",     42, null, false,    42 }
     };
 
     public static TheoryData<string, short?, string?, bool, short?> ShortData => new()
@@ -274,14 +411,46 @@ public partial class ValueConverterTests
 
     public static TheoryData<string, TimeSpan?, string?, bool, TimeSpan?> TimeSpanData => new()
     {
-        { "  12:30:45  ",        null,                   null,    true,  new TimeSpan(12, 30, 45) },
-        { "1.12:30:45",          null,                   null,    true,  new TimeSpan(1, 12, 30, 45) },
-        { "  1.12:30:45  ",      null,                   null,    true,  new TimeSpan(1, 12, 30, 45) },
-        { "  1:30:45.1234567  ", null,                   null,    true,  new TimeSpan(0, 1, 30, 45, 123) + TimeSpan.FromTicks(4567) },
-        { "12:30:45",            null,                   null,    true,  new TimeSpan(12, 30, 45) },
-        { "          ",          null,                   null,    false, default(TimeSpan) },
-        { "          ",          new TimeSpan(1,1,1),    null,    false, new TimeSpan(1,1,1) },
-        { null!,                 null,                   null,    false, default(TimeSpan) },
-        { "7.1:2:3",            null,                   null,    true,  new TimeSpan(7, 1, 2, 3) }
+        { "  12:30:45  ",        null,                null, true,  new TimeSpan(12, 30, 45) },
+        { "1.12:30:45",          null,                null, true,  new TimeSpan(1, 12, 30, 45) },
+        { "  1.12:30:45  ",      null,                null, true,  new TimeSpan(1, 12, 30, 45) },
+        { "  1:30:45.1234567  ", null,                null, true,  new TimeSpan(0, 1, 30, 45, 123) + TimeSpan.FromTicks(4567) },
+        { "12:30:45",            null,                null, true,  new TimeSpan(12, 30, 45) },
+        { "          ",          null,                null, false, default(TimeSpan) },
+        { "          ",          new TimeSpan(1,1,1), null, false, new TimeSpan(1,1,1) },
+        { null!,                 null,                null, false, default(TimeSpan) },
+        { "7.1:2:3",             null,                null, true,  new TimeSpan(7, 1, 2, 3) }
+    };
+
+    public static TheoryData<string, Type, object?, string, TrimmingOptions?, bool, object?> ParseTypeData => new()
+    {
+        { " t ",                                  typeof(string),         null,      "",       TrimmingOptions.Both, true,  "t"     },
+        { " t ",                                  typeof(string),         null,      "",       TrimmingOptions.None, true,  " t "   },
+        { "   ",                                  typeof(string),         null,      "",       TrimmingOptions.None, true,  "   "   },
+        { "   ",                                  typeof(string),         "empty",   "",       TrimmingOptions.Both, false, "empty" },
+        { "{ 1,2,3 }",                            typeof(Bucket<int>),    null,      "",       TrimmingOptions.None, false, null },
+        { " 1 ",                                  typeof(Enum1),          Enum1.Zero, "",      TrimmingOptions.Both, true,  Enum1.One },
+        { "two",                                  typeof(Enum1),          null,       "",      TrimmingOptions.None, true,  Enum1.Two },
+        { " 1 ",                                  typeof(Guid),           Guid.Empty, "",      TrimmingOptions.Both, false, Guid.Empty },
+        { "6f98ec4e-bf41-41d9-8220-12440d6158c7", typeof(Guid),           null,       null!,   TrimmingOptions.None, true,  new Guid("6f98ec4e-bf41-41d9-8220-12440d6158c7") },
+        { "09/16/25",                             typeof(DateOnly),       null,       "en-US", TrimmingOptions.None, true,  new DateOnly(2000 + 5 * 5, 3 * 3, 4 * 4) },
+        { "06:07:42",                             typeof(TimeOnly),       null,       null!,   TrimmingOptions.None, true,  new TimeOnly(6,7,42) },
+        { "2023.10.05 18:30:45 +02:00",           typeof(DateTimeOffset), null,       "de-DE", TrimmingOptions.None, true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(2)) },
+        { "7.1:2:3",                              typeof(TimeSpan),       null,       null!,   TrimmingOptions.None, true,  new TimeSpan(7, 1, 2, 3) },
+        { "-7123",                                typeof(int),            null,       null!,   TrimmingOptions.None, true,  -7123 },
+        { "-7123",                                typeof(short),          null,       null!,   TrimmingOptions.None, true,  (short)-7123 },
+        { " 33 ",                                 typeof(ushort),         null,       null!,   TrimmingOptions.Both, true,  (ushort)33 },
+        { "255",                                  typeof(byte),           null,       null!,   TrimmingOptions.None, true,  (byte)255 },
+        { "x  ",                                  typeof(char),           null,       null!,   TrimmingOptions.End,  true,  'x' },
+        { "09/16/25 09:16:25",                    typeof(DateTime),       null,       "en-US", TrimmingOptions.None, true,  new DateTime(2000 + 5 * 5, 3 * 3, 4 * 4, 3 * 3, 4 * 4, 5 * 5) },
+        { "-123",                                 typeof(sbyte),          null,       null!,   TrimmingOptions.None, true,  (sbyte)-123 },
+        { "7123",                                 typeof(uint),           null,       null!,   TrimmingOptions.None, true,  7123U },
+        { "-7123",                                typeof(long),           null,       null!,   TrimmingOptions.None, true,  -7123L },
+        { "7123",                                 typeof(ulong),          null,       null!,   TrimmingOptions.None, true,  7123UL },
+        { "-71.23",                               typeof(double),         null,       null!,   TrimmingOptions.None, true,  -71.23 },
+        { "true",                                 typeof(bool),           null,       null!,   TrimmingOptions.None, true,  true },
+        { " FALSE ",                              typeof(bool),           null,       null!,   TrimmingOptions.Both, true,  false },
+        { "7.123",                                typeof(float),          null,       null!,   TrimmingOptions.None, true,  7.123f },
+        { ".7123",                                typeof(decimal),        null,       null!,   TrimmingOptions.None, true,  .7123m }
     };
 }
