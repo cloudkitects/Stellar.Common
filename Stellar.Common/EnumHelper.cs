@@ -8,13 +8,13 @@ namespace Stellar.Common;
 
 public static class EnumHelper
 {
-    private class EnumInfo
+    internal class EnumInfo
     {
         public bool IsFlags;
-        public ulong AllFlags;
+        public long AllFlags;
 
         public required string[] Names = [];
-        public required ulong[] Values = [];
+        public required long[] Values = [];
     }
 
     private static readonly ConcurrentDictionary<Type, EnumInfo> Cache = new();
@@ -36,8 +36,10 @@ public static class EnumHelper
     /// </summary>
     /// <param name="type">The <see cref="Enum"/> type to inspect.</param>
     /// <returns>The <see cref="EnumInfo"/> structure for the provided <paramref name="type"/>.</returns>
-    private static EnumInfo GetEnumInfo(Type type)
+    internal static EnumInfo GetEnumInfo(Type type)
     {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
         AssertIsEnum(type);
 
         return Cache.GetOrAdd(type,
@@ -46,12 +48,13 @@ public static class EnumHelper
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static);
 
                 var names = new string[fields.Length];
-                var values = new ulong[fields.Length];
+                var values = new long[fields.Length];
 
                 for (var i = 0; i < fields.Length; i++)
                 {
                     names[i] = fields[i].Name;
-                    values[i] = Convert.ToUInt64(fields[i].GetValue(null), NumberFormatInfo.InvariantInfo);
+
+                    values[i] = Convert.ToInt64(fields[i].GetValue(null), NumberFormatInfo.InvariantInfo);
                 }
 
                 for (var i = 1; i < values.Length; i++)
@@ -102,7 +105,7 @@ public static class EnumHelper
 
         var info = GetEnumInfo(type);
 
-        var index = Array.BinarySearch(info.Values!, (ulong)value);
+        var index = Array.BinarySearch(info.Values!, Convert.ToInt64(value, NumberFormatInfo.InvariantInfo));
 
         return index > -1
             ? (info.Names[index])
@@ -172,7 +175,7 @@ public static class EnumHelper
 
         var info = GetEnumInfo(type);
 
-        var val = Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+        var val = Convert.ToInt64(value, CultureInfo.InvariantCulture);
 
         var index = Array.BinarySearch(info.Values, val);
 
@@ -225,11 +228,14 @@ public static class EnumHelper
 
     public static bool TryParse(Type type, string input, bool ignoreCase, out object? value)
     {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
         AssertIsEnum(type);
 
-        if (input == null || (input = input.Trim()).Length == 0)
+        if (string.IsNullOrWhiteSpace(input))
         {
             value = null;
+            
             return false;
         }
 
@@ -237,7 +243,7 @@ public static class EnumHelper
 
         if (input[0].IsNumberOrSign())
         {
-            if (ulong.TryParse(input, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var val))
+            if (long.TryParse(input, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var val))
             {
                 info = GetEnumInfo(type);
 
@@ -269,13 +275,13 @@ public static class EnumHelper
         if (info.IsFlags)
         {
             var names = input.Split(',');
-            ulong val = 0;
+            long val = 0;
 
             foreach (var n in names)
             {
                 var name = (ignoreCase
                     ? n.ToLowerInvariant()
-                    : n).Trim();
+                    : n);
 
                 index = Array.IndexOf(validNames, name);
 
@@ -315,9 +321,7 @@ public static class EnumHelper
 
     public static bool CheckEnumerationValue(object value, bool isFlags, bool throwOnError, string argumentName, params object[] validValues)
     {
-        argumentName = string.IsNullOrEmpty(argumentName)
-            ? "value"
-            : argumentName;
+        argumentName = argumentName.NullIfWhitespace() ??  "value";
 
         if (value == null)
         {
@@ -329,22 +333,19 @@ public static class EnumHelper
             return false;
         }
 
-        ulong mask = 0;
-        var v = Convert.ToUInt64(value, NumberFormatInfo.InvariantInfo);
+        long mask = 0;
+        var v = Convert.ToInt64(value, NumberFormatInfo.InvariantInfo);
 
-        if (validValues != null)
+        foreach (var t in validValues ?? [])
         {
-            foreach (var t in validValues)
+            var valid = Convert.ToInt64(t, NumberFormatInfo.InvariantInfo);
+
+            if (v == valid)
             {
-                var valid = Convert.ToUInt64(t, NumberFormatInfo.InvariantInfo);
-
-                if (v == valid)
-                {
-                    return true;
-                }
-
-                mask |= valid;
+                return true;
             }
+
+            mask |= valid;
         }
 
         if (isFlags && ((v & mask) == v))
@@ -365,9 +366,7 @@ public static class EnumHelper
         ArgumentNullException.ThrowIfNull(minValue);
         ArgumentNullException.ThrowIfNull(maxValue);
 
-        argumentName = string.IsNullOrEmpty(argumentName)
-            ? "value"
-            : argumentName;
+        argumentName = argumentName.NullIfWhitespace() ??  "value";
 
         if (value == null)
         {
@@ -379,12 +378,12 @@ public static class EnumHelper
             return false;
         }
 
-        var v = Convert.ToUInt64(value, NumberFormatInfo.InvariantInfo);
+        var v = Convert.ToInt64(value, NumberFormatInfo.InvariantInfo);
 
-        var min = Convert.ToUInt64(minValue, NumberFormatInfo.InvariantInfo);
-        var max = Convert.ToUInt64(maxValue, NumberFormatInfo.InvariantInfo);
+        var min = Convert.ToInt64(minValue, NumberFormatInfo.InvariantInfo);
+        var max = Convert.ToInt64(maxValue, NumberFormatInfo.InvariantInfo);
 
-        if (v >= min && v <= max)
+        if (min <= v && v <= max)
         {
             return true;
         }
@@ -401,9 +400,7 @@ public static class EnumHelper
     {
         ArgumentNullException.ThrowIfNull(mask);
 
-        argumentName = string.IsNullOrEmpty(argumentName)
-            ? "value"
-            : argumentName;
+        argumentName = argumentName.NullIfWhitespace() ??  "value";
 
         if (value == null)
         {
@@ -415,8 +412,8 @@ public static class EnumHelper
             return false;
         }
 
-        var v = Convert.ToUInt64(value, NumberFormatInfo.InvariantInfo);
-        var m = Convert.ToUInt64(mask, NumberFormatInfo.InvariantInfo);
+        var v = Convert.ToInt64(value, NumberFormatInfo.InvariantInfo);
+        var m = Convert.ToInt64(mask, NumberFormatInfo.InvariantInfo);
 
         if ((v & m) == v)
         {

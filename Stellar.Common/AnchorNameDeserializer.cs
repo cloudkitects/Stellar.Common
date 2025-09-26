@@ -10,14 +10,9 @@ public interface IAnchoredObject
     string? Name { get; set; }
 }
 
-public class AnchorNameDeserializer : IValueDeserializer
+public class AnchorNameDeserializer(IValueDeserializer innerValueDeserializer) : IValueDeserializer
 {
-    private readonly IValueDeserializer innerValueDeserializer;
-
-    public AnchorNameDeserializer(IValueDeserializer innerValueDeserializer)
-    {
-        this.innerValueDeserializer = innerValueDeserializer;
-    }
+    private readonly IValueDeserializer innerValueDeserializer = innerValueDeserializer;
 
     public object DeserializeValue(IParser parser, Type expectedType, SerializerState state, IValueDeserializer nestedObjectDeserializer)
     {

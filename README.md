@@ -31,45 +31,6 @@ A real-world use case kicks off the next ETL hop once expected files are loaded 
 
 In essence, it is a user-defined synchronous stand-in for `Task.WhenAll()`. It is _not_ a multi-process orchestrator, as state cannot be preserved across processes.
 
-# Buffer
-
-A generic random-access buffer initialized to the given. Extirpated from Stellar.IO, it essentially supports I/O readers with a buffer fill callback and a bookmark equality comparer.
-
-```cs
-// buffer fill callback wraps Read() handling range and EOF...
-private int BufferFillCallback(char[] buffer, int offset) 
-{
-    ArgumentNullException.ThrowIfNull(buffer);
-
-    if (offset < 0 || buffer.Length <= offset)
-    {
-        throw new ArgumentOutOfRangeException(nameof(offset));
-    }
-
-    if (EOF)
-    {
-        return 0;
-    }
-
-    var count = TextReader.Read(buffer, offset, buffer.Length - offset);
-
-    EOF = count <= 0;
-
-    return count;
-}
-
-// somewhere within the reader ctor...
-buffer = new Buffer<char>(bufferSize, BufferFillCallback);
-
-// buffer supports token-based reading
-protected override ReadResult ReadCore(Buffer<char> buffer, IList<string> values)
-{
-    while (buffer.Refill() && !IsNewLine(buffer.Current))
-    {
-        ...
-    }
-```
-
 # DefaultValueDictionary
 
 Implements `IDictionary<TKey, TValue> where TKey : notnull` and returns the `TValue?` default when keys do not exist. In other words, a loosely-defined dictionary.
@@ -141,6 +102,61 @@ foreach (var entry in entries)
 ```
 
 The controller is optional, or can be leveraged for converting the DTO into a strongly-defined object if so desired. Using loosely-defined objects is a quick way to get things building. This is of course a double-edged sword, as it can still lead to runtime errors and information loss.
+
+User property names colliding with method names are handled gracefully (in a particle/wave duality manner):
+
+```cs
+[Theory]
+[InlineData("Add", "oh my")]
+[InlineData("Contains", false)]
+[InlineData("ContainsKey", "certainly")]
+[InlineData("TryGetValue", -1 /* beer */)]
+[InlineData("Remove", "2025-08-16")]
+[InlineData("Clear", "Crystal")]
+public void MethodCollisionTest(string key, object? value)
+{
+    var input = new Dictionary<string, object?>() { { key, value } };
+        
+    dynamic obj = new DynamicDictionary(input);
+
+    // colliding property names are available...
+    Assert.Equal(value, obj.Add ?? obj.Clear ?? obj.Contains ?? obj.ContainsKey ?? obj.TryGetValue ?? obj.Remove);
+
+    // ...methods are also available.
+    var kvp = new KeyValuePair<string, object?>("Well", "done");
+        
+    obj.Add(kvp.Key, kvp.Value);
+    Assert.True(obj.Contains(input.First()));
+    Assert.True(obj.Contains(kvp));
+    Assert.True(obj.ContainsKey(key));
+    Assert.True(obj.TryGetValue(key, out object? v) && v == value);
+    Assert.True(obj.Remove(input.First()));
+    Assert.Equal(1, obj.Count);
+}
+```
+
+Property name collisions are handled less gracefully; intrinsic properties are preserved using dot access and user properties are only available through indexers:
+
+```cs
+[Theory]
+[InlineData("Keys", "one,two")]
+[InlineData("IsReadonly", true)]
+[InlineData("Count", 30)]
+public void PropertyCollisionTest(string key, object? value)
+{
+    dynamic obj = new DynamicDictionary(new Dictionary<string, object?>() { { key, value } });
+
+    // intrinsic properties are not overriden
+    Assert.NotEqual(value, obj.Keys);
+    Assert.False(obj.IsReadOnly);
+    Assert.Equal(1, obj.Keys.Count);
+    Assert.Equal(1, obj.Count);
+
+    // colliding user properties are available
+    Assert.Equal(value, obj[key]);
+    Assert.Equal(value, obj.Values[0]); 
+}
+```cs
 
 # EnumHelper
 

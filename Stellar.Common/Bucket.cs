@@ -1,5 +1,6 @@
 ﻿namespace Stellar.Common;
 
+[Serializable]
 public class Bucket<TKey> where TKey : notnull
 {
     private readonly Dictionary<TKey, bool> bucket = [];
@@ -20,4 +21,9 @@ public class Bucket<TKey> where TKey : notnull
     public bool this[TKey element] => bucket[element]!;
 
     public bool IsFull => bucket.Values.All(v => v);
+
+    public override string ToString()
+    {
+        return string.Join(' ', bucket.Select(kvp => $"{kvp.Key}:{(kvp.Value ? 1 : 0)}"));
+    }
 }

@@ -2,367 +2,1229 @@
 
 namespace Stellar.Common.Tests;
 
-public class ValueConverterTests
+public partial class ValueConverterTests
 {
-    #region data
-    public static TheoryData<string> Formats =>
-    [
-        "yyyy-MM-dd",
-        "HH.mm.ss"
-    ];
-
-    #region boolean
-    public static TheoryData<string, bool> TruthyAndFalsy => new()
+    #region helpers
+    private static void ParseTestArguments<T>(
+        T? defaultValue,
+        string? codePage,
+        out int index,
+        out T? defValue,
+        out CultureInfo culture)
     {
-        { "True", true },
-        { " true", true },
-        { "TRUE ", true },
-        { "False", false },
-        { " false", false },
-        { "FALSE ", false },
-        { "0", false },
-        { " 0 ", false },
-        { "1", true },
-        { " 1 ", true },
-        { "", false },
-        { null!, false }
-    };
+        index = (defaultValue is not null ? 1 : 0) | (codePage is not null ? 1 : 0) << 1;
+        defValue = defaultValue ?? default;
+        culture = ValueConverter.ParseCultureInfo(codePage);
+    }
 
-    public static TheoryData<string, bool?> NullableTruthyAndFalsy => new()
+    private static int ParseTestArguments<T>(
+        T? defaultValue,
+        string? codePage,
+        TrimmingOptions? trimmingOptions,
+        out CultureInfo culture,
+        out TrimmingOptions trimming)
     {
-        { "True", true },
-        { "FALSE ", false },
-        { "0", false },
-        { "1", true },
-        { "", null }
-    };
+        culture = ValueConverter.ParseCultureInfo(codePage);
+        trimming = trimmingOptions!.Value;
 
-    public static TheoryData<string> NotBoolean => new()
-    {
-        { "YES" },
-        { "NO" },
-        { "ON" },
-        { "OFF" },
-        { "T" },
-        { "F" },
-        { "2" },
-        { "-1" }
-    };
+        return (defaultValue is not null ? 1 : 0) << 2 | (codePage is not null ? 1 : 0) << 1 | (trimmingOptions is not null ? 1 : 0);
+    }
     #endregion
 
-    #region char
-    public static TheoryData<string, char?, TrimmingOptions> Chars => new()
-    {
-        { "\u2192 ", '\u2192', TrimmingOptions.Both },
-        { " T", 'T', TrimmingOptions.Start },
-        { "Y   ", 'Y', TrimmingOptions.End },
-        { " F ", 'F' , TrimmingOptions.Both},
-        { " ", ' ', TrimmingOptions.None },
-        { "   ↑   ", '\u2191', TrimmingOptions.Both },
-        { "   \u2191   ", '↑', TrimmingOptions.Both }
-    };
-    #endregion
-
-    #region enum
-    public static TheoryData<string, TrimmingOptions> Enum1 => new()
-    {
-        { "   Both   ", TrimmingOptions.Both },
-        { "Start ", TrimmingOptions.Start },
-        { "   End", TrimmingOptions.End },
-        { "None", TrimmingOptions.None },
-        { "", TrimmingOptions.None }
-    };
-
-    public static TheoryData<string, TrimmingOptions?> Enum2 => new()
-    {
-        { "   Both   ", TrimmingOptions.Both },
-        { "Start ", TrimmingOptions.Start },
-        { "   End", TrimmingOptions.End },
-        { "None", TrimmingOptions.None },
-        { "", null }
-    };
-    #endregion
-
-    #region datetime
-    public static TheoryData<string, DateTime> DateTimes => new()
-    {
-        { "2024-08-09 03:25:05.2456256", new DateTime(2024, 8, 9, 3, 25, 5, 245, 625).AddMicroseconds(.6) },
-        { "2023-12-02 02:39:14.345", new DateTime(2023, 12, 2, 2, 39, 14, 345) },
-        { "2024-06-06 07:47:55.5676", new DateTime(2024, 6, 6, 7, 47, 55, 567, 600) },
-        { "2023-11-29 11:45:55.5464", new DateTime(2023, 11, 29, 11, 45, 55, 546, 400) },
-        { "2024-04-01 03:58:25.134", new DateTime(2024, 4, 1, 3, 58, 25, 134) },
-        { "2024-06-26 09:41:24.00001", new DateTime(2024, 6, 26, 9, 41, 24, 0, 10) },
-        { "2023-10-20 02:40:13.0001", new DateTime(2023, 10, 20, 2, 40, 13, 0, 100) },
-        { "2024-06-29 13:21:25.999", new DateTime(2024, 6, 29, 13, 21, 25, 999) },
-        { "2023-09-18 17:18:55.88", new DateTime(2023, 9, 18, 17, 18, 55, 880) },
-        { "2023-11-16 02:33:52.7", new DateTime(2023, 11, 16, 2, 33, 52, 700) },
-        { "2024-05-03 17:55:04.65", new DateTime(2024, 5, 3, 17, 55, 4, 650) },
-        { "2023-09-07 12:36:06.543", new DateTime(2023, 9, 7, 12, 36, 6, 543) },
-        { "2023-08-21 23:18:37.4321", new DateTime(2023, 8, 21, 23, 18, 37, 432, 100) },
-        { "2024-05-13 23:18:15.999999", new DateTime(2024, 5, 13, 23, 18, 15, 999, 999) },
-        { "2023-09-26 05:51:31", new DateTime(2023, 9, 26, 5, 51, 31) },
-        { "2024-05-08 08:39:58", new DateTime(2024, 5, 8, 8, 39, 58) },
-        { "2024-04-04 23:07:49.9", new DateTime(2024, 4, 4, 23, 7, 49, 900) },
-        { "2024-07-04 08:37:30.87", new DateTime(2024, 7, 4, 8, 37, 30, 870) },
-        { "2024-02-28 22:56:13.765", new DateTime(2024, 2, 28, 22, 56, 13, 765) },
-        { "8/10/2024 13:14:15", new DateTime(2024, 8, 10, 13, 14, 15) },
-        { "1/1/2024 12:00:00.1", new DateTime(2024, 1, 1, 12, 0, 0, 100) },
-        { "12/31/2023 11:59:59.324 PM", new DateTime(2023, 12, 31, 23, 59, 59, 324) },
-        { "12/31/2023 11:59:59.339 PM", new DateTime(2023, 12, 31, 23, 59, 59, 339) },
-        { "08-05-98 3:34:10.001 PM", new DateTime(1998, 8, 5, 15, 34, 10, 1) },
-        { "7/6/2024 5:05:17.321", new DateTime(2024, 7, 6, 5, 5, 17, 321) },
-        { "8/5/98 3:34:10.999 PM", new DateTime(1998, 8, 5, 15, 34, 10, 999) },
-        { "8-10-2024 3:04:05 AM", new DateTime(2024, 8, 10, 3, 4, 5) },
-        { "8/10/24 1:14:15.000001 PM", new DateTime(2024, 8, 10, 13, 14, 15, 0, 1) },
-        { "7/6/24 5:04:03.000123", new DateTime(2024, 7, 6, 5, 4, 3, 0, 123) },
-        { "06-23-2024 00:58:45", new DateTime(2024, 6, 23, 0, 58, 45) },
-        { "06-23-2024 00:58:45.309", new DateTime(2024, 6, 23, 0, 58, 45, 309) },
-        { "06-23-2024 01:58 AM", new DateTime(2024, 6, 23, 1, 58, 0) },
-        { "06-23-2024 01:58 Am", new DateTime(2024, 6, 23, 1, 58, 0) },
-        { "06-23-2024 01:58 PM", new DateTime(2024, 6, 23, 13, 58, 0) },
-        { "06-23-2024 01:58 Pm", new DateTime(2024, 6, 23, 13, 58, 0) },
-        { "06-23-2024 01:58 aM", new DateTime(2024, 6, 23, 1, 58, 0) },
-        { "06-23-2024 01:58 am", new DateTime(2024, 6, 23, 1, 58, 0) },
-        { "06-23-2024 01:58 pM", new DateTime(2024, 6, 23, 13, 58, 0) },
-        { "06-23-2024 01:58 pm", new DateTime(2024, 6, 23, 13, 58, 0) },
-        { "2024/06/23 00:58:45", new DateTime(2024, 6, 23, 0, 58, 45) },
-        { "2024/06/23 00:58:45.309", new DateTime(2024, 6, 23, 0, 58, 45, 309) },
-        { "Sep 25 2025", new DateTime(2025, 9, 25, 0, 0, 0) },
-        // JavaScript
-        {"Wed Aug 05 00:00:00 CDT 1998", new DateTime(1998, 8, 5, 0, 0, 0) },
-        {"Sat Oct 11 17:45:20 CDT 2008", new DateTime(2008, 10, 11, 17, 45, 20)},
-        {"Wed Oct 19 16:03:29 GMT-05:00 1988", new DateTime(1988, 10, 19, 16, 3, 29)},
-        {"Thu Sep 5 14:12:43 UTC-05:00 1968", new DateTime(1968, 9, 5, 14, 12, 43)},
-        // locale-dependent
-        { "Mar 30 2020", new DateTime(2020, 3, 30, 0, 0, 0) }, // abbreviated, non-recent
-        { "Mar 30 23:45" , new DateTime(DateTime.Now.Year, 3, 30, 23, 45, 0) }, // abbreviated, recent
-        { "07/25/2025 05:17 PM", new DateTime(2025, 7, 25, 17, 17, 0) }, // US locale
-        { "25.07.2025 17:17", new DateTime(2025, 7, 25, 17, 17, 0) }, // European locale
-        // timestamps
-        { "20250725173754", new DateTime(2025, 7, 25, 17, 37, 54) },
-        { "20250417", new DateTime(2025, 4, 17) },
-    };
-    #endregion
-
-    #region date
-    public static TheoryData<string, DateOnly> Dates => new()
-    {
-        { "2024-08-09", new DateOnly(2024, 8, 9) },
-        { "2023-12-02", new DateOnly(2023, 12, 2) },
-        { "2024-06-06", new DateOnly(2024, 6, 6) },
-        { "2023-11-29", new DateOnly(2023, 11, 29) },
-        { "2024-04-01", new DateOnly(2024, 4, 1) },
-        { "2024-06-26", new DateOnly(2024, 6, 26) },
-        { "2023-10-20", new DateOnly(2023, 10, 20) },
-        { "2024-06-29", new DateOnly(2024, 6, 29) },
-        { "2023-09-18", new DateOnly(2023, 9, 18) },
-        { "2023-11-16", new DateOnly(2023, 11, 16) },
-        { "8/10/2024", new DateOnly(2024, 8, 10) },
-        { "1/1/2024", new DateOnly(2024, 1, 1) },
-        { "12/31/2023", new DateOnly(2023, 12, 31) },
-        { "12/31/2023", new DateOnly(2023, 12, 31) },
-        { "08-05-98", new DateOnly(1998, 8, 5) },
-        { "7/6/2024", new DateOnly(2024, 7, 6) },
-        { "8/5/98", new DateOnly(1998, 8, 5) },
-        { "8-10-2024", new DateOnly(2024, 8, 10) },
-        { "8/10/24", new DateOnly(2024, 8, 10) },
-        { "7/6/24", new DateOnly(2024, 7, 6) },
-        { "06-23-2024", new DateOnly(2024, 6, 23) },
-        { "2024/06/23", new DateOnly(2024, 6, 23) },
-        { "2024/06/23", new DateOnly(2024, 6, 23) },
-        { "Sep 25 2025", new DateOnly(2025, 9, 25) },
-    };
-    #endregion
-
-    #region time
-    public static TheoryData<string, TimeOnly> Times => new()
-    {
-        { "03:25:05.2456256", new TimeOnly(123052456256) },
-        { "02:39:14.345", new TimeOnly(2, 39, 14, 345) },
-        { "07:47:55.5676", new TimeOnly(7, 47, 55, 567, 600) },
-        { "11:45:55.5464", new TimeOnly(11, 45, 55, 546, 400) },
-        { "03:58:25.134", new TimeOnly(3, 58, 25, 134) },
-        { "09:41:24.00001", new TimeOnly(9, 41, 24, 0, 10) },
-        { "02:40:13.0001", new TimeOnly(2, 40, 13, 0, 100) },
-        { "13:21:25.999", new TimeOnly(13, 21, 25, 999) },
-        { "17:18:55.88", new TimeOnly(17, 18, 55, 880) },
-        { "02:33:52.7", new TimeOnly(2, 33, 52, 700) },
-        { "17:55:04.65", new TimeOnly(17, 55, 4, 650) },
-        { "12:36:06.543", new TimeOnly(12, 36, 6, 543) },
-        { "23:18:37.4321", new TimeOnly(23, 18, 37, 432, 100) },
-        { "23:18:15.999999", new TimeOnly(23, 18, 15, 999, 999) },
-        { "05:51:31", new TimeOnly(5, 51, 31) },
-        { "08:39:58", new TimeOnly(8, 39, 58) },
-        { "23:07:49.9", new TimeOnly(23, 7, 49, 900) },
-        { "08:37:30.87", new TimeOnly(8, 37, 30, 870) },
-        { "22:56:13.765", new TimeOnly(22, 56, 13, 765) },
-        { "22.56.13", new TimeOnly(22, 56, 13) }
-    };
-    #endregion
-
-    #region object
-    public static TheoryData<object?, Type, object?> Objects => new()
-    {
-        { true, typeof(bool), true },
-        { false, typeof(bool), false },
-        { DBNull.Value, typeof(bool), null },
-    };
-
-    public static TheoryData<object?, Type, object?, IFormatProvider?, object?> ObjectsWithOptions => new()
-    {
-        { true, typeof(bool), null, null, true },
-        { false, typeof(bool), null, null, false },
-        { DBNull.Value, typeof(bool), null, null, null },
-        { DBNull.Value, typeof(bool), false, null, false },
-
-        { 12.34, typeof(double), 0.0, null, 12.34 },
-        { "12,34", typeof(double), 0.0, CultureInfo.GetCultureInfo("de-DE"), 12.34 },
-        { "25/12/2025", typeof(DateOnly), null, CultureInfo.GetCultureInfo("fr-FR"), new DateOnly(2025, 12, 25) }
-    };
-
-    #endregion
-
-    #region to string
-    public static TheoryData<object?, string, string?, IFormatProvider?> ToStringData => new()
-    {
-        { true, "True", null, null },
-        { false, "False", null, null },
-        { "", "", null, null },
-        { null !, "", null, null },
-
-        { new DateTime(2025, 7, 18), "07/18/2025 00:00:00", null, null },
-        { new DateTime(2025, 7, 18, 20, 45, 32), "2025-Jul-18 20:45:32", "yyyy-MMM-dd HH:mm:ss", null },
-
-        { new DateOnly(2025, 7, 18), "07/18/2025", null, null },
-        { new DateOnly(2025, 7, 18), "2025-Jul-18", "yyyy-MMM-dd", null },
-
-        { new TimeOnly(20, 45, 32), "08.45.32", "hh.mm.ss", null },
-        { new TimeSpan(8, 45, 32), "08:45:32", null, CultureInfo.GetCultureInfo("fi-FI") },
-        { new TimeSpan(8, 45, 32), "08:45:32", null, null },
-
-        { 123.456, "123.456", null, null },
-        { 123.456, "123,456", null, CultureInfo.GetCultureInfo("de-DE") },
-        { 'A', "A", null, null },
-        { ' ', " ", null, null },
-        { '\u2192', "\u2192", null, null }
-    };
-    #endregion
-    #endregion
-
+    #region formats
     [Theory]
     [MemberData(nameof(Formats))]
     public void SetsAndGetsDateTimeFormats(string format)
     {
         ValueConverter.AddDateTimeFormat(format);
-        ValueConverter.AddDateTimeFormats([format]);
+        ValueConverter.AddTimeFormat(format);
 
-        var formats = ValueConverter.GetDateTimeFormats();
+        Assert.Contains(format, ValueConverter.GetDateTimeFormats());
+        Assert.Contains(format, ValueConverter.GetTimeFormats());
+    }
+    #endregion
 
-        Assert.Contains(format, formats);
+    #region to string
+    [Theory]
+    [MemberData(nameof(StringToString))]
+    public void ToStringsString(string? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(ToStringData))]
-    public void ConvertsToString(object? obj, string expected, string? format, IFormatProvider? culture)
+    [MemberData(nameof(CharToString))]
+    public void ToStringsChar(char? obj, string expected, string? format)
     {
-        Assert.Equal(expected, ValueConverter.ToString(obj!, format, culture: culture));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(TruthyAndFalsy))]
-    public void ToBoolean(string input, bool expected)
+    [MemberData(nameof(ByteToString))]
+    public void ToStringsByte(byte? obj, string expected, string? format)
     {
-        Assert.Equal(expected, ValueConverter.ParseBoolean(input));
-    }
-
-
-    [Theory]
-    [MemberData(nameof(NullableTruthyAndFalsy))]
-    public void ToNullableBoolean(string input, bool? expected)
-    {
-        Assert.Equal(expected, ValueConverter.ParseNullableBoolean(input));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(NotBoolean))]
-    public void ToBooleanThrows(string input)
+    [MemberData(nameof(SignedByteToString))]
+    public void ToStringsSignedByte(sbyte? obj, string expected, string? format)
     {
-        Assert.Throws<FormatException>(() => ValueConverter.ParseBoolean(input));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(Chars))]
-    public void ToNullableChar(string input, char? expected, TrimmingOptions trimmingOptions)
+    [MemberData(nameof(Shorts))]
+    public void ToStringsShort(short? obj, string expected, string? format)
     {
-        Assert.Equal(expected, ValueConverter.ParseNullableChar(input!, trimmingOptions));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(Enum1))]
-    public void ToEnum(string input, TrimmingOptions expected)
+    [MemberData(nameof(UInts))]
+    public void ToStringsUInt(uint? obj, string expected, string? format)
     {
-        Assert.Equal(expected, ValueConverter.ParseEnum<TrimmingOptions>(input));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
     }
 
     [Theory]
-    [MemberData(nameof(Enum2))]
-    public void ToNullableEnum(string input, TrimmingOptions? expected)
+    [MemberData(nameof(UShorts))]
+    public void ToStringsUShort(ushort? obj, string expected, string? format)
     {
-        Assert.Equal(expected, ValueConverter.ParseNullableEnum<TrimmingOptions>(input));
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleToString))]
+    public void ToStringsSingle(float? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
+    }
+
+    [Theory]
+    [MemberData(nameof(Doubles))]
+    public void ToStringsDouble(double? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(IntToString))]
+    public void ToStringsInt(int? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(ULongToString))]
+    public void ToStringsULong(ulong? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(LongToString))]
+    public void ToStringsLong(long? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(Decimals))]
+    public void ToStringsDecimal(decimal? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(DateTimeOffsets))]
+    public void ToStringsDateTimeOffset(DateTimeOffset? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(BooleanToString))]
+    public void ToStringsBoolean(bool? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
+    }
+
+    [Theory]
+    [MemberData(nameof(GuidToString))]
+    public void ToStringsGuid(string? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(new Guid(obj!), format));
+    }
+
+    [Theory]
+    [MemberData(nameof(BucketToString))]
+    public void ToStringsBucket(string[] obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(new Bucket<string>(obj!), format));
+    }
+
+    [Theory]
+    [MemberData(nameof(DateToString))]
+    public void ToStringsDate(DateOnly? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
+    }
+
+    [Theory]
+    [MemberData(nameof(DateTimeToString))]
+    public void ToStringsDateTime(DateTime? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [MemberData(nameof(TimeToString))]
+    public void ToStringsTime(TimeOnly? obj, string expected, string? format)
+    {
+        Assert.Equal(expected, ValueConverter.ToString(obj!, format));
+    }
+
+    [Theory]
+    [MemberData(nameof(TimeSpanToString))]
+    public void ToStringsTimeSpan(TimeSpan? obj, string expected, string? format, string? codePage)
+    {
+        var result = codePage is not null
+            ? ValueConverter.ToString(obj!, format, codePage: codePage)
+            : ValueConverter.ToString(obj!, format);
+
+        Assert.Equal(expected, result);
+    }
+    #endregion
+
+    #region sbyte
+    [Theory]
+    [MemberData(nameof(SignedByteData))]
+    public void ParsesSByteOrThrows(string input, sbyte? defaultValue, string? codePage, bool expectedResult, sbyte? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<sbyte> action = index switch
+        {
+            3 => () => ValueConverter.ParseSByte(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseSByte(input, culture: culture),
+            1 => () => ValueConverter.ParseSByte(input, defValue!.Value),
+            _ => () => ValueConverter.ParseSByte(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SignedByteData))]
+    public void ParsesNullableSByteOrThrows(string input, sbyte? _, string? codePage, bool expectedResult, sbyte? expected)
+    {
+        ParseTestArguments((sbyte?)null, codePage, out var index, out var _, out var culture);
+
+        Func<sbyte?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableSByte(input, culture),
+            _ => () => ValueConverter.ParseNullableSByte(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region byte
+    [Theory]
+    [MemberData(nameof(ByteData))]
+    public void ParsesByteOrThrows(string input, byte? defaultValue, string? codePage, bool expectedResult, byte? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<byte> action = index switch
+        {
+            3 => () => ValueConverter.ParseByte(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseByte(input, culture: culture),
+            1 => () => ValueConverter.ParseByte(input, defValue!.Value),
+            _ => () => ValueConverter.ParseByte(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ByteData))]
+    public void ParsesNullableByteOrThrows(string input, byte? _, string? codePage, bool expectedResult, byte? expected)
+    {
+        ParseTestArguments((byte?)null, codePage, out var index, out var _, out var culture);
+
+        Func<byte?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableByte(input, culture),
+            _ => () => ValueConverter.ParseNullableByte(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region short
+    [Theory]
+    [MemberData(nameof(ShortData))]
+    public void ParsesShortOrThrows(string input, short? defaultValue, string? codePage, bool expectedResult, short? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<short> action = index switch
+        {
+            3 => () => ValueConverter.ParseShort(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseShort(input, culture: culture),
+            1 => () => ValueConverter.ParseShort(input, defValue!.Value),
+            _ => () => ValueConverter.ParseShort(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ShortData))]
+    public void ParsesNullableShortOrThrows(string input, short? _, string? codePage, bool expectedResult, short? expected)
+    {
+        ParseTestArguments((short?)null, codePage, out var index, out var _, out var culture);
+
+        Func<short?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableShort(input, culture),
+            _ => () => ValueConverter.ParseNullableShort(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region ushort
+    [Theory]
+    [MemberData(nameof(UnsignedShortData))]
+    public void ParsesUnsignedShortOrThrows(string input, ushort? defaultValue, string? codePage, bool expectedResult, ushort? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<ushort> action = index switch
+        {
+            3 => () => ValueConverter.ParseUnsignedShort(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseUnsignedShort(input, culture: culture),
+            1 => () => ValueConverter.ParseUnsignedShort(input, defValue!.Value),
+            _ => () => ValueConverter.ParseUnsignedShort(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsignedShortData))]
+    public void ParsesNullableUnsignedShortOrThrows(string input, ushort? _, string? codePage, bool expectedResult, ushort? expected)
+    {
+        ParseTestArguments((ushort?)null, codePage, out var index, out var _, out var culture);
+
+        Func<ushort?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableUnsignedShort(input, culture),
+            _ => () => ValueConverter.ParseNullableUnsignedShort(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region int
+    [Theory]
+    [MemberData(nameof(IntegerData))]
+    public void ParsesIntOrThrows(string input, int? defaultValue, string? codePage, bool expectedResult, int expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<int> action = index switch
+        {
+            3 => () => ValueConverter.ParseInt(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseInt(input, culture: culture),
+            1 => () => ValueConverter.ParseInt(input, defValue),
+            _ => () => ValueConverter.ParseInt(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IntegerData))]
+    public void ParsesNullableIntOrThrows(string input, int? _, string? codePage, bool expectedResult, int expected)
+    {
+        ParseTestArguments((int?)null, codePage, out var index, out var _, out var culture);
+
+        Func<int?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableInt(input, culture),
+            _ => () => ValueConverter.ParseNullableInt(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region uint
+    [Theory]
+    [MemberData(nameof(UnsignedIntegerData))]
+    public void ParsesUIntOrThrows(string input, uint? defaultValue, string? codePage, bool expectedResult, uint expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<uint> action = index switch
+        {
+            3 => () => ValueConverter.ParseUInt(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseUInt(input, culture: culture),
+            1 => () => ValueConverter.ParseUInt(input, defValue),
+            _ => () => ValueConverter.ParseUInt(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsignedIntegerData))]
+    public void ParsesNullableUIntOrThrows(string input, uint? _, string? codePage, bool expectedResult, uint expected)
+    {
+        ParseTestArguments((uint?)null, codePage, out var index, out var _, out var culture);
+
+        Func<uint?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableUInt(input, culture),
+            _ => () => ValueConverter.ParseNullableUInt(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region long
+    [Theory]
+    [MemberData(nameof(LongIntegerData))]
+    public void ParsesLongOrThrows(string input, long? defaultValue, string? codePage, bool expectedResult, long expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<long> action = index switch
+        {
+            3 => () => ValueConverter.ParseLong(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseLong(input, culture: culture),
+            1 => () => ValueConverter.ParseLong(input, defValue),
+            _ => () => ValueConverter.ParseLong(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LongIntegerData))]
+    public void ParsesNullableLongOrThrows(string input, long? _, string? codePage, bool expectedResult, long expected)
+    {
+        ParseTestArguments((long?)null, codePage, out var index, out var _, out var culture);
+
+        Func<long?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableLong(input, culture),
+            _ => () => ValueConverter.ParseNullableLong(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region ulong
+    [Theory]
+    [MemberData(nameof(UnsignedLongIntegerData))]
+    public void ParsesUnsignedLongOrThrows(string input, ulong? defaultValue, string? codePage, bool expectedResult, ulong expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<ulong> action = index switch
+        {
+            3 => () => ValueConverter.ParseULong(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseULong(input, culture: culture),
+            1 => () => ValueConverter.ParseULong(input, defValue),
+            _ => () => ValueConverter.ParseULong(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsignedLongIntegerData))]
+    public void ParsesNullableUnsignedLongOrThrows(string input, ulong? _, string? codePage, bool expectedResult, ulong expected)
+    {
+        ParseTestArguments((ulong?)null, codePage, out var index, out var _, out var culture);
+
+        Func<ulong?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableULong(input, culture),
+            _ => () => ValueConverter.ParseNullableULong(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region float
+    [Theory]
+    [MemberData(nameof(FloatData))]
+    public void ParsesFloatOrThrows(string input, float? defaultValue, string? codePage, bool expectedResult, float expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<float> action = index switch
+        {
+            3 => () => ValueConverter.ParseFloat(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseFloat(input, culture: culture),
+            1 => () => ValueConverter.ParseFloat(input, defValue),
+            _ => () => ValueConverter.ParseFloat(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatData))]
+    public void ParsesNullableFloatOrThrows(string input, float? _, string? codePage, bool expectedResult, float expected)
+    {
+        ParseTestArguments((float?)null, codePage, out var index, out var _, out var culture);
+
+        Func<float?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableFloat(input, culture),
+            _ => () => ValueConverter.ParseNullableFloat(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region double
+    [Theory]
+    [MemberData(nameof(DoubleData))]
+    public void ParsesDoubleOrThrows(string input, double? defaultValue, string? codePage, bool expectedResult, double expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<double> action = index switch
+        {
+            3 => () => ValueConverter.ParseDouble(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseDouble(input, culture: culture),
+            1 => () => ValueConverter.ParseDouble(input, defValue),
+            _ => () => ValueConverter.ParseDouble(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DoubleData))]
+    public void ParsesNullableDoubleOrThrows(string input, double? _, string? codePage, bool expectedResult, double expected)
+    {
+        ParseTestArguments((double?)null, codePage, out var index, out var _, out var culture);
+
+        Func<double?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDouble(input, culture),
+            _ => () => ValueConverter.ParseNullableDouble(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region decimal
+    [Theory]
+    [MemberData(nameof(DecimalData))]
+    public void ParsesDecimalOrThrows(string input, decimal? defaultValue, string? codePage, bool expectedResult, decimal expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<decimal> action = index switch
+        {
+            3 => () => ValueConverter.ParseDecimal(input, defValue, culture: culture),
+            2 => () => ValueConverter.ParseDecimal(input, culture: culture),
+            1 => () => ValueConverter.ParseDecimal(input, defValue),
+            _ => () => ValueConverter.ParseDecimal(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DecimalData))]
+    public void ParsesNullableDecimalOrThrows(string input, decimal? _, string? codePage, bool expectedResult, decimal expected)
+    {
+        ParseTestArguments((decimal?)null, codePage, out var index, out var _, out var culture);
+
+        Func<decimal?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDecimal(input, culture),
+            _ => () => ValueConverter.ParseNullableDecimal(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region bool
+    [Theory]
+    [MemberData(nameof(BooleanData))]
+    public void ParsesBooleanOrThrows(string input, bool? defaultValue, bool expectedResult, bool expected)
+    {
+        ParseTestArguments(defaultValue, null, out var index, out var defValue, out var culture);
+
+        bool action() => ValueConverter.ParseBoolean(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(BooleanData))]
+    public void ParsesNullableBooleanOrThrows(string input, bool? _, bool expectedResult, bool expected)
+    {
+        bool? action() => ValueConverter.ParseNullableBoolean(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region char
+    [Theory]
+    [MemberData(nameof(CharData))]
+    public void ParsesCharOrThrows(string input, char? defaultValue, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
+    {
+        var index = defaultValue is not null
+            ? 1
+            : 0;
+
+        char action() => ValueConverter.ParseChar(input, trimmingOptions: trimmingOptions);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(CharData))]
+    public void ParsesNullableCharOrThrows(string input, char? _, TrimmingOptions trimmingOptions, bool expectedResult, char expected)
+    {
+        char? action() => ValueConverter.ParseNullableChar(input, trimmingOptions);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region enum
+    [Theory]
+    [MemberData(nameof(EnumData))]
+    public void GenericParsesEnumOrThrows(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<Enum1> action = index switch
+        {
+            3 => () => ValueConverter.ParseEnum(input, defaultValue!.Value, trimmingOptions!.Value),
+            2 => () => ValueConverter.ParseEnum<Enum1>(input, trimmingOptions: trimmingOptions!.Value),
+            1 => () => ValueConverter.ParseEnum(input, defaultValue!.Value),
+            _ => () => ValueConverter.ParseEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumData))]
+    public void ParsesEnumOrThrows(string input, Enum1? defaultValue, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0) | (trimmingOptions is not null ? 1 : 0) << 1;
+
+        Func<object> action = index switch
+        {
+            3 => () => ValueConverter.ParseEnum(typeof(Enum1), input, defaultValue!.Value, trimmingOptions!.Value),
+            _ => () => ValueConverter.ParseEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumData))]
+    public void ParsesNullableEnumOrThrows(string input, Enum1? _, TrimmingOptions? trimmingOptions, bool expectedResult, Enum1? expected)
+    {
+        Func<Enum1?> action = (trimmingOptions is not null ? 1 : 0) switch
+        {
+            1 => () => ValueConverter.ParseNullableEnum<Enum1>(input, trimmingOptions!.Value),
+            _ => () => ValueConverter.ParseNullableEnum<Enum1>(input)
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region Guid
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void ParsesGuidOrThrows(string input, Guid? defaultValue, bool expectedResult, Guid? expected)
+    {
+        var index = (defaultValue is not null ? 1 : 0);
+        var defValue = defaultValue ?? default;
+
+        Guid action() => ValueConverter.ParseGuid(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GuidData))]
+    public void ParsesNullableGuidOrThrows(string input, Guid? _, bool expectedResult, Guid? expected)
+    {
+        Guid? action() => ValueConverter.ParseNullableGuid(input);
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region date
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void ParsesDateOnlyOrThrows(string input, DateOnly? defaultValue, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<DateOnly> action = index switch
+        {
+            3 => () => ValueConverter.ParseDate(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseDate(input, culture: culture),
+            1 => () => ValueConverter.ParseDate(input, defValue!.Value),
+            _ => () => ValueConverter.ParseDate(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateData))]
+    public void ParsesNullableDateOnlyOrThrows(string input, DateOnly? _, string? codePage, bool expectedResult, DateOnly? expected)
+    {
+        ParseTestArguments((DateOnly?)null, codePage, out var index, out var _, out var culture);
+
+        Func<DateOnly?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDate(input, culture),
+            _ => () => ValueConverter.ParseNullableDate(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region time
+    [Theory]
+    [MemberData(nameof(TimeData))]
+    public void ParsesTimeOrThrows(string input, TimeOnly? defaultValue, string? codePage, bool expectedResult, TimeOnly? expected)
+    {
+        ValueConverter.AddTimeFormat("HH.mm.ss");
+
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<TimeOnly> action = index switch
+        {
+            3 => () => ValueConverter.ParseTime(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseTime(input, culture: culture),
+            1 => () => ValueConverter.ParseTime(input, defValue!.Value),
+            _ => () => ValueConverter.ParseTime(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TimeData))]
+    public void ParsesNullableTimeOrThrows(string input, TimeOnly? _, string? codePage, bool expectedResult, TimeOnly? expected)
+    {
+        ValueConverter.AddTimeFormat("HH.mm.ss");
+
+        ParseTestArguments((TimeOnly?)null, codePage, out var index, out var _, out var culture);
+
+        Func<TimeOnly?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableTime(input, culture),
+            _ => () => ValueConverter.ParseNullableTime(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region datetime
+    [Theory]
+    [MemberData(nameof(DateTimeData))]
+    public void ParsesDateTimeOrThrows(string input, DateTime? defaultValue, string? codePage, bool expectedResult, DateTime? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<DateTime> action = index switch
+        {
+            3 => () => ValueConverter.ParseDateTime(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseDateTime(input, culture: culture),
+            1 => () => ValueConverter.ParseDateTime(input, defValue!.Value),
+            _ => () => ValueConverter.ParseDateTime(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateTimeData))]
+    public void ParsesNullableDateTimeOrThrows(string input, DateTime? _, string? codePage, bool expectedResult, DateTime? expected)
+    {
+        ParseTestArguments((DateTime?)null, codePage, out var index, out var _, out var culture);
+
+        Func<DateTime?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDateTime(input, culture),
+            _ => () => ValueConverter.ParseNullableDateTime(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region datetime offset
+    [Theory]
+    [MemberData(nameof(DateTimeOffsetData))]
+    public void ParsesDateTimeOffsetOrThrows(string input, DateTimeOffset? defaultValue, string? codePage, bool expectedResult, DateTimeOffset? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<DateTimeOffset> action = index switch
+        {
+            3 => () => ValueConverter.ParseDateTimeOffset(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseDateTimeOffset(input, culture: culture),
+            1 => () => ValueConverter.ParseDateTimeOffset(input, defValue!.Value),
+            _ => () => ValueConverter.ParseDateTimeOffset(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateTimeOffsetData))]
+    public void ParsesNullableDateTimeOffsetOrThrows(string input, DateTimeOffset? _, string? codePage, bool expectedResult, DateTimeOffset? expected)
+    {
+        ParseTestArguments((DateTimeOffset?)null, codePage, out var index, out var _, out var culture);
+
+        Func<DateTimeOffset?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableDateTimeOffset(input, culture),
+            _ => () => ValueConverter.ParseNullableDateTimeOffset(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region timespan
+    [Theory]
+    [MemberData(nameof(TimeSpanData))]
+    public void ParsesTimeSpanOrThrows(string input, TimeSpan? defaultValue, string? codePage, bool expectedResult, TimeSpan? expected)
+    {
+        ParseTestArguments(defaultValue, codePage, out var index, out var defValue, out var culture);
+
+        Func<TimeSpan> action = index switch
+        {
+            3 => () => ValueConverter.ParseTimeSpan(input, defValue!.Value, culture: culture),
+            2 => () => ValueConverter.ParseTimeSpan(input, culture: culture),
+            1 => () => ValueConverter.ParseTimeSpan(input, defValue!.Value),
+            _ => () => ValueConverter.ParseTimeSpan(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TimeSpanData))]
+    public void ParsesNullableTimeSpanOrThrows(string input, TimeSpan? _, string? codePage, bool expectedResult, TimeSpan? expected)
+    {
+        ParseTestArguments((TimeSpan?)null, codePage, out var index, out var _, out var culture);
+
+        Func<TimeSpan?> action = index switch
+        {
+            2 => () => ValueConverter.ParseNullableTimeSpan(input, culture),
+            _ => () => ValueConverter.ParseNullableTimeSpan(input),
+        };
+
+        if (!expectedResult)
+        {
+            Assert.Throws<FormatException>(() => action());
+        }
+        else
+        {
+            Assert.Equal(expected, action());
+        }
+    }
+    #endregion
+
+    #region parse
+    [Theory]
+    [MemberData(nameof(ParseTypeData))]
+    public void ParsesOrThrows(string input, Type type, object? defaultValue, string codePage, TrimmingOptions? trimmingOptions, bool result, object? expectedValue)
+    {
+        var index = ParseTestArguments(defaultValue, codePage, trimmingOptions, out var culture, out var trimming);
+
+        Func<object> action = index switch
+        {
+            7 => () => ValueConverter.Parse(input, type, defaultValue, culture, trimming),
+            6 => () => ValueConverter.Parse(input, type, defaultValue, culture),
+            5 => () => ValueConverter.Parse(input, type, defaultValue, trimmingOptions: trimming),
+            4 => () => ValueConverter.Parse(input, type, defaultValue),
+            3 => () => ValueConverter.Parse(input, type, culture: culture, trimmingOptions: trimming),
+            2 => () => ValueConverter.Parse(input, type, culture: culture),
+            1 => () => ValueConverter.Parse(input, type, trimmingOptions: trimming),
+            _ => () => ValueConverter.Parse(input, type)
+        };
+
+        if (!result)
+        {
+            if (type == typeof(string) || type.IsValueType)
+            {
+                Assert.Throws<FormatException>(() => action());
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => action());
+            }
+        }
+        else
+        {
+            Assert.Equal(expectedValue, action());
+        }
     }
 
     [Fact]
-    public void ToEnumThrows()
+    public void ParsesGeneric()
     {
-        Assert.Throws<FormatException>(() => ValueConverter.ParseEnum("bogus", TrimmingOptions.None));
+        Assert.Equal(123, ValueConverter.Parse<int>("123"));
+        
+        Assert.True(ValueConverter.TryParse<double>("42.67", out var _));
+        
+        Assert.True(ValueConverter.TryParse("20250916", out var _, new DateOnly(1, 1, 1)));
+        Assert.False(ValueConverter.TryParse("20251609", out var d, new DateOnly(1, 1, 1)));
+        Assert.Equal(new DateOnly(1, 1, 1), d);
+        
+        Assert.False(ValueConverter.TryParse<sbyte>("257", out var b, -1));
+        Assert.Equal(-1, b);
     }
-
-    [Theory]
-    [MemberData(nameof(DateTimes))]
-    public void ToDateTime(string input, DateTime expected)
-    {
-        ValueConverter.AddDateTimeFormats([
-            "MMM dd HH:mm",
-            "dd'.'MM'.'yyyy HH:mm"
-        ]);
-
-        Assert.Equal(expected, ValueConverter.ParseDateTime(input));
-    }
-
-    [Theory]
-    [MemberData(nameof(Dates))]
-    public void ToDate(string input, DateOnly expected)
-    {
-        Assert.Equal(expected, ValueConverter.ParseDate(input));
-    }
-
-    [Theory]
-    [MemberData(nameof(Times))]
-    public void ToTime(string input, TimeOnly expected)
-    {
-        var format = "HH.mm.ss";
-
-        ValueConverter.AddTimeFormat(format);
-        Assert.Contains(format, ValueConverter.GetTimeFormats());
-
-        Assert.Equal(expected, ValueConverter.ParseTime(input));
-    }
-
-    [Theory]
-    [MemberData(nameof(Objects))]
-    public void FromObject(object? input, Type type, object? expected)
-    {
-        var value = ValueConverter.Parse(input, type);
-
-        Assert.Equal(expected, value);
-    }
-
-    [Theory]
-    [MemberData(nameof(ObjectsWithOptions))]
-    public void FromObjectWithOptions(object? input, Type type, object? defaultValue, IFormatProvider? culture, object? expected)
-    {
-        var value = ValueConverter.Parse(input, type, defaultValue, culture);
-
-        Assert.Equal(expected, value);
-    }
+    #endregion
 }

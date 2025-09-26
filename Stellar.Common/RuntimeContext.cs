@@ -22,17 +22,17 @@ public static class RuntimeContext
     /// <summary>
     /// The executing assembly's name.
     /// </summary>
-    public static string ExecutingAssembly { get; }
+    public static string ExecutingAssembly { get; } = "Unknown";
 
     /// <summary>
     /// The calling assembly's name.
     /// </summary>
-    public static string EntryAssembly { get; }
+    public static string EntryAssembly { get; } = "Unknown";
 
     /// <summary>
     /// The entry assembly's version.
     /// </summary>
-    public static string Version { get; }
+    public static string Version { get; } = "";
 
     /// <summary>
     /// Constructor populates every property.
@@ -41,7 +41,7 @@ public static class RuntimeContext
     {
         IsDebugging = Debugger.IsAttached;
 
-        ExecutingAssembly = Assembly.GetExecutingAssembly().GetName().Name ?? "Unknown";
+        ExecutingAssembly = Assembly.GetExecutingAssembly().GetName().Name!;
 
         var assemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Select(assembly => assembly.GetName().Name ?? string.Empty)
@@ -51,33 +51,19 @@ public static class RuntimeContext
 
         IsTesting = !string.IsNullOrWhiteSpace(testAssembly);
 
-        EntryAssembly = testAssembly ?? Assembly.GetEntryAssembly()?.GetName().Name ?? "Unknown";
-        
+        EntryAssembly = testAssembly ?? Assembly.GetEntryAssembly()?.GetName().Name!;
+
         var dependencies = $"{EntryAssembly}.deps.json";
 
-        string contents;
+        var contents = File.ReadAllText(dependencies);
 
-        if (!File.Exists(dependencies) || string.IsNullOrWhiteSpace(contents = File.ReadAllText(dependencies)))
-        {
-            Version = string.Empty;
-        }
-        else
-        {
-            try
-            {
-                var libraries = JsonDocument.Parse(contents).RootElement
-                    .GetProperty("libraries")
-                    .EnumerateObject()
-                    .ToList();
+        var libraries = JsonDocument.Parse(contents).RootElement
+            .GetProperty("libraries")
+            .EnumerateObject()
+            .ToList();
 
-                Version = libraries
-                    .FirstOrDefault(p => p.Name.StartsWith($"{ExecutingAssembly}/"))
-                    .Name.Split('/').LastOrDefault() ?? string.Empty;
-            }
-            catch
-            {
-                Version = string.Empty;
-            }
-        }
+        Version = libraries
+            .FirstOrDefault(p => p.Name.StartsWith($"{ExecutingAssembly}/"))
+            .Name.Split('/').LastOrDefault() ?? string.Empty;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Stellar.Common;
 
@@ -90,14 +91,13 @@ public class DefaultValueDictionary<TKey, TValue> : IDictionary<TKey, TValue> wh
 
     #endregion
 
-    #region IEnumerable<KeyValuePair<TKey, TValue>>
+    #region IEnumerable
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
         return dictionary.GetEnumerator();
     }
-    #endregion
 
-    #region IEnumerable Members
+    [ExcludeFromCodeCoverage(Justification = "Unreachable")]
     IEnumerator IEnumerable.GetEnumerator()
     {
         return dictionary.GetEnumerator();

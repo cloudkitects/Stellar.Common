@@ -15,27 +15,27 @@ namespace Stellar.Common;
 ///   person.Alterego = "Superman";
 ///   Assert.Equals("Superman", person.ALTEREGO);
 /// </example>
-public class DynamicInstance(IDictionary<string, object>? dictionary = null, IEqualityComparer<string>? comparer = null) : DynamicObject
+public class DynamicInstance(IDictionary<string, object?>? dictionary = null, IEqualityComparer<string>? comparer = null) : DynamicObject
 {
-    protected readonly IDictionary<string, object> Dictionary = new DefaultValueDictionary<string, object>(dictionary, comparer ?? StringComparer.InvariantCultureIgnoreCase);
+    protected readonly IDictionary<string, object?> dictionary = new DefaultValueDictionary<string, object?>(dictionary, comparer ?? StringComparer.InvariantCultureIgnoreCase);
 
     public override bool TryGetMember(GetMemberBinder binder, out object result)
     {
-        result = Dictionary[binder.Name];
+        result = dictionary[binder.Name]!;
 
         return true;
     }
 
     public override bool TrySetMember(SetMemberBinder binder, object? value)
     {
-        Dictionary[binder.Name] = value!;
+        dictionary[binder.Name] = value!;
 
         return true;
     }
 
     public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
     {
-        if (!Dictionary.TryGetValue(binder.Name, out object? value) || value is not Delegate)
+        if (!dictionary.TryGetValue(binder.Name, out object? value) || value is not Delegate)
         {
             return base.TryInvokeMember(binder, args, out result);
         }
