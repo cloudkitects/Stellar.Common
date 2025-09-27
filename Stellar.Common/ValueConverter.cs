@@ -207,14 +207,14 @@ public static class ValueConverter
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        input = Trim(input, trimmingOptions);
-        
-        if (string.IsNullOrEmpty(input))
+        if (input is null)
         {
             value = defaultValue;
 
             return false;
         }
+        
+        input = Trim(input, trimmingOptions);
 
         if (type == typeof(string))
         {
