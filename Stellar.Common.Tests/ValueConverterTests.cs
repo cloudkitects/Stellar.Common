@@ -1234,9 +1234,9 @@ public partial class ValueConverterTests
         object b = DBNull.Value;
         object c = 123.45m;
 
-        Assert.Null(ValueConverter.Parse(a, typeof(double)));
-        Assert.Null(ValueConverter.Parse(b, typeof(DBNull)));   
-        Assert.Equal(123.45m, ValueConverter.Parse(c, typeof(decimal)));   
+        Assert.Null(ValueConverter.Parse<double>(a));
+        Assert.Null(ValueConverter.Parse<DBNull>(b));   
+        Assert.Equal(123.45m, ValueConverter.Parse<decimal>(c));   
     }
     #endregion
 }

@@ -37,7 +37,9 @@ public static class ValueConverter
     private static string[] timeFormats =
     [
         "HHmmss",
-        "HHmm"
+        "HHmm",
+        "d\\.hhmmss",
+        "d\\.hhmm"
     ];
 
     public static string[] GetDateTimeFormats()
@@ -167,12 +169,21 @@ public static class ValueConverter
     #endregion
 
     #region parse
-        public static object? Parse(
-        object? value,
-        Type type,
-        object? defaultValue = null,
-        IFormatProvider? culture = null,
-        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    public static object? Parse<T>(
+    object? value,
+    object? defaultValue = null,
+    IFormatProvider? culture = null,
+    TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        return Parse(value, typeof(T), defaultValue, culture, trimmingOptions);
+    }
+
+    public static object? Parse(
+    object? value,
+    Type type,
+    object? defaultValue = null,
+    IFormatProvider? culture = null,
+    TrimmingOptions trimmingOptions = TrimmingOptions.Both)
     {
         if (value is null || value == DBNull.Value)
         {
@@ -227,7 +238,7 @@ public static class ValueConverter
 
             return false;
         }
-        
+
         input = Trim(input, trimmingOptions);
 
         if (type == typeof(string))
@@ -256,7 +267,7 @@ public static class ValueConverter
         }
 
         culture ??= CultureInfo.InvariantCulture;
-        
+
         bool r;
 
         // types without a type code
@@ -444,7 +455,7 @@ public static class ValueConverter
         if (TryParseSByte(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
             value = parsedValue;
-            
+
             return true;
         }
 
@@ -477,7 +488,7 @@ public static class ValueConverter
         }
 
         value = defaultValue;
-        
+
         return false;
     }
 
@@ -498,7 +509,7 @@ public static class ValueConverter
         if (TryParseByte(input, out var parsedValue, default, culture))
         {
             value = parsedValue;
-            
+
             return true;
         }
 
@@ -548,7 +559,7 @@ public static class ValueConverter
         if (TryParseShort(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
             value = parsedValue;
-            
+
             return true;
         }
 
@@ -600,7 +611,7 @@ public static class ValueConverter
         if (TryParseUnsignedShort(input, out var parsedValue, default, culture ?? CultureInfo.InvariantCulture))
         {
             value = parsedValue;
-            
+
             return true;
         }
 
@@ -1359,9 +1370,9 @@ public static class ValueConverter
         {
             return true;
         }
-        
+
         value = defaultValue;
-        
+
         return false;
     }
 
