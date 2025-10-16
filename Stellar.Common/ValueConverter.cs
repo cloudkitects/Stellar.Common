@@ -80,19 +80,19 @@ public static class ValueConverter
     #endregion
 
     #region helpers
-    private static string Trim(string value, TrimmingOptions options)
+    public static string Trim(string value, TrimmingOptions options, char[]? chars = null)
     {
         if ((options & TrimmingOptions.Both) == TrimmingOptions.Both)
         {
-            value = value.Trim();
+            value = value.Trim(chars);
         }
         else if ((options & TrimmingOptions.End) == TrimmingOptions.End)
         {
-            value = value.TrimEnd();
+            value = value.TrimEnd(chars);
         }
         else if ((options & TrimmingOptions.Start) == TrimmingOptions.Start)
         {
-            value = value.TrimStart();
+            value = value.TrimStart(chars);
         }
 
         return value;
@@ -167,7 +167,21 @@ public static class ValueConverter
     #endregion
 
     #region parse
-    #region generic
+        public static object? Parse(
+        object? value,
+        Type type,
+        object? defaultValue = null,
+        IFormatProvider? culture = null,
+        TrimmingOptions trimmingOptions = TrimmingOptions.Both)
+    {
+        if (value is null || value == DBNull.Value)
+        {
+            return defaultValue;
+        }
+
+        return Parse($"{value}", type, defaultValue, culture, trimmingOptions);
+    }
+
     public static T Parse<T>(
         string input,
         IFormatProvider? culture = null,
@@ -1464,7 +1478,6 @@ public static class ValueConverter
 
         return encoding;
     }
-    #endregion
     #endregion
     #endregion
 }

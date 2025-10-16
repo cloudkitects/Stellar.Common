@@ -1226,5 +1226,17 @@ public partial class ValueConverterTests
         Assert.False(ValueConverter.TryParse<sbyte>("257", out var b, -1));
         Assert.Equal(-1, b);
     }
+
+    [Fact]
+    public void ParsesObject()
+    {
+        object a = null!;
+        object b = DBNull.Value;
+        object c = 123.45m;
+
+        Assert.Null(ValueConverter.Parse(a, typeof(double)));
+        Assert.Null(ValueConverter.Parse(b, typeof(DBNull)));   
+        Assert.Equal(123.45m, ValueConverter.Parse(c, typeof(decimal)));   
+    }
     #endregion
 }

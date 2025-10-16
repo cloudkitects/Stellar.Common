@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RepositoryUrl>https://github.com/cloudkitects/Stellar.Common</RepositoryUrl>
-    <VersionPrefix>1.1.1</VersionPrefix>
+    <VersionPrefix>1.1.3</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Title>Stellar.Common</Title>
     <Authors>cloudkitects</Authors>
@@ -16,6 +16,7 @@
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/cloudkitects/Stellar.Common</PackageProjectUrl>
     <PackageId>Stellar.Common</PackageId>
+    <PackageReleaseNotes>Non-breaking: Value Converter: Trim takes optional chars; reinstated Parse(object?).</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

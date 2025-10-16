@@ -217,10 +217,12 @@ public class DynamicDictionaryTests
 
         dynamic obj = new DynamicDictionary(input);
 
+        obj.Crush = "Lois";
+
         Dictionary<string, object?> output = obj.ToDictionary();
 
-        Assert.Equal(4, output.Keys.Count);
-        Assert.Equal(4, output.Values.Count);
+        Assert.Equal(5, output.Keys.Count);
+        Assert.Equal(5, output.Values.Count);
 
         foreach(KeyValuePair<string, object?> kvp in obj)
         {
