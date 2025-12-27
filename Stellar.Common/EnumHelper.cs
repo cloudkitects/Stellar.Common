@@ -321,7 +321,7 @@ public static class EnumHelper
 
     public static bool CheckEnumerationValue(object value, bool isFlags, bool throwOnError, string argumentName, params object[] validValues)
     {
-        argumentName = argumentName.NullIfWhitespace() ??  "value";
+        argumentName = argumentName.NullIfWhitespace() ?? "value";
 
         if (value == null)
         {

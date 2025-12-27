@@ -3,6 +3,12 @@
 public class BucketTests
 {
     [Fact]
+    public void BucketThrowsOnNullElements()
+    {
+        Assert.Throws<ArgumentException>(() => new Bucket<string>(null!));
+    }
+
+    [Fact]
     public void BucketWorks()
     {
         var bucket = new Bucket<string>([ "apples", "oranges", "bananas" ]);

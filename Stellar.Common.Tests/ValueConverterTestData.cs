@@ -403,7 +403,8 @@ public partial class ValueConverterTests
         { "2023-10-05T18:30:45+02:00",     null,                                              null,    true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(2)) },
         { "2023.10.05 18:30:45 +02:00",     null,                                             "de-DE", true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(2)) },
         { "2023/10/05 18:30:45 +02:00",     null,                                             "ja-JP", true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(2)) },
-        { "20231005183045",                 null,                                             null,    true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(DateTimeOffset.Now.Hour - DateTimeOffset.UtcNow.Hour)) },
+        // breaks on DST change!
+        { "20231005183045",                 null,                                             null,    true,  new DateTimeOffset(2023, 10, 5, 18, 30, 45, TimeSpan.FromHours(-5)) },
         { "          ",                     null,                                             null,    false, default(DateTimeOffset) },
         { "          ",                     new DateTimeOffset(2022,1,1,0,0,0,TimeSpan.Zero), null,    false, new DateTimeOffset(2022,1,1,0,0,0,TimeSpan.Zero) },
         { null!,                            null,                                             null,    false, default(DateTimeOffset) },

@@ -22,12 +22,12 @@ public static class RuntimeContext
     /// <summary>
     /// The executing assembly's name.
     /// </summary>
-    public static string ExecutingAssembly { get; } = "Unknown";
+    public static string? ExecutingAssembly { get; } = "Unknown";
 
     /// <summary>
     /// The calling assembly's name.
     /// </summary>
-    public static string EntryAssembly { get; } = "Unknown";
+    public static string? EntryAssembly { get; } = "Unknown";
 
     /// <summary>
     /// The entry assembly's version.
@@ -41,17 +41,16 @@ public static class RuntimeContext
     {
         IsDebugging = Debugger.IsAttached;
 
-        ExecutingAssembly = Assembly.GetExecutingAssembly().GetName().Name!;
+        ExecutingAssembly = Assembly.GetExecutingAssembly().GetName().Name;
 
         var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(assembly => assembly.GetName().Name ?? string.Empty)
-            .ToList();
+            .Select(assembly => assembly.GetName().Name);
 
-        var testAssembly = assemblies.FirstOrDefault(assembly => assembly.EndsWith(".Tests"));
+        var testAssembly = assemblies.FirstOrDefault(assembly => (assembly ?? "").EndsWith(".Tests"));
 
         IsTesting = !string.IsNullOrWhiteSpace(testAssembly);
 
-        EntryAssembly = testAssembly ?? Assembly.GetEntryAssembly()?.GetName().Name!;
+        EntryAssembly = testAssembly ?? Assembly.GetEntryAssembly()?.GetName().Name;
 
         var dependencies = $"{EntryAssembly}.deps.json";
 

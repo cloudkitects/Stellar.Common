@@ -180,6 +180,8 @@ public class EnumHelperTests
         Assert.True(EnumHelper.CheckEnumerationValue(SByteEnum.Value0, false, false, "Value2", 32, 42));
         Assert.False(EnumHelper.CheckEnumerationValue(SByteEnum.Value1, false, false, "Value2", 32, 42));
         Assert.False(EnumHelper.CheckEnumerationValue(null!, false, false, "Value2", 32, 42));
+        Assert.True(EnumHelper.CheckEnumerationValue(SByteEnum.Value3, false, false, " ", 0, 32, 42));
+        
         Assert.Throws<ArgumentNullException>(() => EnumHelper.CheckEnumerationValue(null!, false, true, "Value2", 32, 42));
     }
 
